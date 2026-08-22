@@ -65,19 +65,39 @@ jobs:
       # is rejected by the subcommands, and setting it granularly in turn
       # disables the combined command.
       #
-      # Note on 0.x versions: nx maps a "minor" bump to a patch increment and a
-      # "major" bump to the middle number, so asking for "minor" on 0.12.0 gets
-      # you 0.12.1. Pass an exact version in `overrides` when that matters - a
-      # behavior change delivered as a patch reaches people running a routine
-      # update.
+      # Note on 0.x versions: nx defaults to the 0.x convention where a `feat`
+      # lands as a patch and a breaking change as a minor, which quietly
+      # delivered new behaviour to anyone running a routine update. `nx.json`
+      # sets `adjustSemverBumpsForZeroMajorVersion: false`, so a `feat` is a
+      # minor at 0.x exactly as it is at 1.x.
       #
-      # `projects` exists because nx attributes a change to a file outside every
-      # package - the root README, a shared config, anything under examples/ -
-      # to *all* of them, which then cascades to their dependents as "a
-      # dependency was bumped". A one-line README edit alongside work in one
-      # package therefore proposes a release of the entire workspace, with
-      # changelogs that say nothing. Naming the projects keeps such a release
-      # honest.
+      # That setting is a package deal, and the other half of it matters: a
+      # breaking change now goes to 1.0.0 rather than to the next 0.x minor.
+      # These packages are pre-1.0 deliberately, so that is almost never what
+      # is wanted - pass `overrides` to keep it in 0.x. The trade was made on
+      # frequency: a `feat` ships most releases and a breaking change rarely,
+      # so this moves the manual step off the common path onto the rare one.
+      #
+      # `projects` is the escape hatch for a cascade with a specific cause, and
+      # it is worth knowing the cause before reaching for it.
+      #
+      # A file that belongs to no project - `pnpm-lock.yaml`, `nx.json`, the root
+      # `package.json` - counts as affecting *every* project. Anything under
+      # `examples/` does not: those are projects of their own. Check with
+      # `nx show projects --affected --files=<path>` rather than guessing.
+      #
+      # Being affected is not enough to be released, though. nx then asks whether
+      # the commit's scope names the project, and if it does not the commit is
+      # worth at most a patch - and nothing at all when its type is one that
+      # never bumps (`chore`, `docs`, `ci`, `build`, `refactor`, `test`). So a
+      # lockfile touched by `chore(examples):` is silent, while the same lockfile
+      # touched by `fix(examples):` patches all fourteen packages with a
+      # changelog line that says nothing about them.
+      #
+      # Which makes the real fix commit hygiene rather than this input: work that
+      # ships nothing to a package must not be typed `fix` or `feat`. See
+      # CONTRIBUTING.md. Use `projects` when a release still comes out wider than
+      # the change.
       #
       # Nothing here is run with --dry-run. nx only edits files in this
       # throwaway checkout, and a preview built from the real thing beats one

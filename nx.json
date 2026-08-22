@@ -63,6 +63,7 @@
     "version": {
       "conventionalCommits": true,
       "preVersionCommand": "pnpm build",
+      "adjustSemverBumpsForZeroMajorVersion": false,
       "fallbackCurrentVersionResolver": "disk",
       "git": {
         "commit": false,

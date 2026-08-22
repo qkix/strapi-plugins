@@ -113,9 +113,34 @@ Package labels (`pkg: …`) are applied automatically from the paths a PR touche
 so a new package needs an entry in [.github/labeler.yml](./.github/labeler.yml)
 and in the issue forms.
 
+### Commit messages decide what gets released
+
+Conventional commits, and the type is not cosmetic - `nx release` reads it to
+decide who gets a new version.
+
+Files that belong to no package - `pnpm-lock.yaml`, `nx.json`, the root
+`package.json` - count as touching _every_ package. A type that never bumps
+(`chore`, `docs`, `ci`, `build`, `refactor`, `test`) is harmless there, but
+`fix` or `feat` gives all fourteen packages a release whose changelog entry
+says nothing about them.
+
+So type by what ships, not by what the work felt like:
+
+| The change                            | Type                     |
+| ------------------------------------- | ------------------------ |
+| Behaviour a package's users get       | `feat` / `fix`           |
+| Examples, tooling, CI, lockfile bumps | `chore` / `ci` / `build` |
+| READMEs, screenshots, roadmaps        | `docs`                   |
+
+Adding a dependency to an example app is a `chore`, however much it fixed
+something locally - nothing shipped. Check with
+`nx show projects --affected --files=<path>` when unsure.
+
 Releases are cut with `nx release`: versions, tags and changelogs are per
 package, so a change to one does not bump the others. The release workflow is
-manual and defaults to a dry run.
+manual and defaults to a dry run. A `feat` is a minor and a `fix` is a patch,
+at 0.x the same as anywhere else - but a **breaking change goes to 1.0.0**, so
+pass an explicit version to the workflow to keep a pre-1.0 package in 0.x.
 
 ## Reporting bugs
 

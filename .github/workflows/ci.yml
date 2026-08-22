@@ -5,9 +5,20 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # A PR opened by GITHUB_TOKEN does not trigger workflows - GitHub blocks that
-  # to avoid loops - so the release PR would never get the checks main requires.
-  # "Release - prepare" dispatches this workflow for the release branch instead.
+  # Kept for running CI against a branch by hand. It does NOT rescue a release
+  # PR: branch protection only counts check runs from a workflow run attached to
+  # the pull request, so a dispatched run lands its checks on the right commit
+  # and the PR stays BLOCKED anyway.
+  #
+  # A PR opened by GITHUB_TOKEN never triggers workflows - GitHub blocks that to
+  # avoid loops - so a release PR has no checks until someone approves the
+  # pending run, from the PR page or with:
+  #
+  #   gh api -X POST repos/qkix/strapi-plugins/actions/runs/<id>/approve
+  #
+  # That approval is the deliberate gate before anything reaches npm. Removing
+  # it means giving "Release - prepare" a PAT or GitHub App token so the PR is
+  # not bot-authored.
   workflow_dispatch:
 
 jobs:
