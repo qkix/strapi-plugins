@@ -64,7 +64,17 @@ export interface ExportRequest {
   status: Status;
   relations: boolean;
   media: boolean;
+  /** Export exactly these documents - the Content Manager's selected rows. */
   documentIds?: string[];
+  /**
+   * Strapi filters, passed through untouched - the Content Manager's current
+   * view. Ignored when `documentIds` is set, which the server resolves by
+   * overwriting `filters.documentId`.
+   */
+  filters?: Record<string, unknown>;
+  /** Which locale to take, when the content type has more than one. */
+  locale?: string;
+  sort?: string;
 }
 
 export interface ImportRequest {

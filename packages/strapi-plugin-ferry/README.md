@@ -62,6 +62,22 @@ export default {
 
 Then open **Ferry** in the main menu.
 
+## Exporting from the list view
+
+Ferry's own page carries whole content types. The Content Manager is where you
+usually know which entries you actually want, so the export is there too, in the
+two shapes that question comes in:
+
+- **Tick some rows** and _Export_ appears beside _Delete_. This is the "a copy of
+  the twelve articles I just fixed" case.
+- **Narrow the list with filters** and the _Export_ button next to the view
+  settings takes everything that matches - including what is on the pages you
+  cannot see, which is why ticking rows cannot answer it.
+
+Either way you pick the format and the version, and the file downloads. Both
+respect the `plugin::ferry.export` permission and appear only on the project's
+own content types, so nothing offers an export the server would refuse.
+
 ## The dry run
 
 Nothing is written until you have read a report. Upload a file, and Ferry
