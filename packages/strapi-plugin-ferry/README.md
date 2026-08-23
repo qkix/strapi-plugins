@@ -64,6 +64,8 @@ Then open **Ferry** in the main menu.
 
 ## Exporting from the list view
 
+<img src="https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-ferry/docs/list-view.png" alt="A Content Manager list view with two rows ticked: an Export action between Publish and Delete, and a second Export button beside the view settings" width="900" />
+
 Ferry's own page carries whole content types. The Content Manager is where you
 usually know which entries you actually want, so the export is there too, in the
 two shapes that question comes in:
