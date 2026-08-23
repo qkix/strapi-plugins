@@ -10,16 +10,6 @@ Ideas and disagreement welcome at
 
 ## Next
 
-### Export from the Content Manager list view
-
-Select rows, or narrow the list with filters, and export exactly those. The
-server side already exists: `/ferry/export` takes `documentIds` and `filters`
-and the tests cover both. What is missing is the button in the list view, which
-is the injection zone work Greenlight already does for its stage column.
-
-Without it, taking a copy of "the twelve articles I just fixed" means exporting
-all of them and deleting the rest by hand.
-
 ### More than one content type in a file
 
 Today a file holds one content type, so moving articles and their authors is two

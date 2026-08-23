@@ -275,6 +275,37 @@ describe('scope', () => {
     expect((archive.documents[0].hero as any).label).toBe('Start');
   });
 
+  it('24. exports what the filters match, for a narrowed list view', async () => {
+    // The list view hands its own filters through untouched, so a view narrowed
+    // to one title exports that title and nothing else.
+    const archive = await archiveOf({ filters: { title: { $eq: 'The second one' } } });
+
+    expect(archive.documents).toHaveLength(1);
+    expect(archive.documents[0].title).toBe('The second one');
+  });
+
+  it('25. narrows to both when given a selection and filters at once', async () => {
+    // They combine rather than one winning: `documentIds` replaces only the
+    // `documentId` key, and every other filter still applies. Ticking rows
+    // inside a filtered view is therefore safe - the ticks already satisfy the
+    // filter - while contradictory ones return nothing rather than quietly
+    // picking a side.
+    const agreeing = await archiveOf({
+      documentIds: ['ferryarticletwo000001'],
+      filters: { title: { $eq: 'The second one' } },
+    });
+
+    expect(agreeing.documents).toHaveLength(1);
+    expect(agreeing.documents[0].title).toBe('The second one');
+
+    const contradictory = await archiveOf({
+      documentIds: ['ferryarticletwo000001'],
+      filters: { title: { $eq: 'The first one' } },
+    });
+
+    expect(contradictory.documents).toHaveLength(0);
+  });
+
   it('23. refuses a content type that is not the project’s own', async () => {
     await expect(run({ uid: 'plugin::upload.file', format: 'json' })).rejects.toThrow(
       'not available'
