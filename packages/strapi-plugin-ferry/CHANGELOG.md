@@ -1,3 +1,13 @@
+## 0.2.0 (2026-08-23)
+
+### 🚀 Features
+
+- **ferry:** export from the Content Manager list view ([#172](https://github.com/qkix/strapi-plugins/pull/172))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.1.1 (2026-08-18)
 
 ### 📖 Documentation
