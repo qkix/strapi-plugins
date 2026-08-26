@@ -1,3 +1,13 @@
+## 0.3.0 (2026-08-26)
+
+### 🚀 Features
+
+- **chartkit-core:** let one chart name its own colors ([#176](https://github.com/qkix/strapi-plugins/pull/176))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.2.0 (2026-08-20)
 
 ### 🚀 Features
