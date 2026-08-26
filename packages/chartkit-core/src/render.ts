@@ -32,7 +32,7 @@ import {
   timeScale,
 } from './scale';
 import { element, escapeText, round, text } from './svg';
-import { TEXT_COLOR } from './theme';
+import { TEXT_COLOR, createPalette, type Palette } from './theme';
 import { validateChartSpec } from './validate';
 import type { ChartIssue } from './validate';
 import type { ChartData, ChartSpec } from './types';
@@ -90,6 +90,7 @@ export function renderValidatedChart(spec: ChartSpec, options: RenderOptions = {
 const RADIAL_TYPES = new Set<ChartSpec['type']>(['pie', 'donut']);
 
 function renderValidated(spec: ChartSpec, options: RenderOptions): string {
+  const paint = createPalette(spec.options?.colors);
   const width = positive(spec.options?.width, DEFAULT_WIDTH);
   const height = positive(spec.options?.height, DEFAULT_HEIGHT);
   const titleHeight = spec.title ? TITLE_FONT_SIZE * 1.6 : 0;
@@ -107,19 +108,20 @@ function renderValidated(spec: ChartSpec, options: RenderOptions): string {
   const legend = wantsLegend ? planLegend(legendNames, width) : NO_LEGEND;
 
   const body = radial
-    ? renderRadialBody(spec, { width, height, titleHeight, legendHeight: legend.height })
+    ? renderRadialBody(spec, { width, height, titleHeight, legendHeight: legend.height, paint })
     : renderCartesianBody(spec, {
         width,
         height,
         titleHeight,
         legendHeight: legend.height,
         locale: options.locale,
+        paint,
       });
 
   // Anchored to the foot of the chart, a gutter clear of the edge so
   // descenders do not touch it. For a cartesian chart this lands exactly where
   // the layout reserved room for it, below the category labels.
-  const legendMarkup = renderLegend(legend, height - legend.height - 8, width);
+  const legendMarkup = renderLegend(legend, height - legend.height - 8, width, paint);
 
   const prefix = options.idPrefix ?? 'chartkit';
   const titleId = `${prefix}-title`;
@@ -176,7 +178,10 @@ type Frame = {
 };
 
 /** Bars, lines and areas: everything drawn against a pair of axes. */
-function renderCartesianBody(spec: ChartSpec, frame: Frame & { locale?: string }): string {
+function renderCartesianBody(
+  spec: ChartSpec,
+  frame: Frame & { locale?: string; paint: Palette }
+): string {
   const { width, height, titleHeight, legendHeight, locale } = frame;
   const mode = spec.options?.stackMode ?? 'grouped';
 
@@ -297,7 +302,7 @@ function renderCartesianBody(spec: ChartSpec, frame: Frame & { locale?: string }
 
   const marks =
     spec.type === 'bar'
-      ? renderBar({ data, mode, x, y, zero })
+      ? renderBar({ data, mode, x, y, zero, paint: frame.paint })
       : renderLine({
           data,
           type: spec.type,
@@ -305,6 +310,7 @@ function renderCartesianBody(spec: ChartSpec, frame: Frame & { locale?: string }
           x,
           y,
           zero,
+          paint: frame.paint,
         });
 
   return axes.behind + marks + axes.front;
@@ -316,7 +322,7 @@ function renderCartesianBody(spec: ChartSpec, frame: Frame & { locale?: string }
  * The plot is simply what is left after the title and legend, and the wedges
  * take the largest circle that fits inside it.
  */
-function renderRadialBody(spec: ChartSpec, frame: Frame): string {
+function renderRadialBody(spec: ChartSpec, frame: Frame & { paint: Palette }): string {
   const { width, height, titleHeight, legendHeight } = frame;
 
   const top = titleHeight + 8;
@@ -329,7 +335,7 @@ function renderRadialBody(spec: ChartSpec, frame: Frame): string {
     bottom: height - legendHeight - 8,
   };
 
-  return renderPie({ data: spec.data, type: spec.type, plot });
+  return renderPie({ data: spec.data, type: spec.type, plot, paint: frame.paint });
 }
 
 /** Keeps the baseline inside the plot when a cropped axis puts zero outside it. */

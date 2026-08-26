@@ -498,6 +498,108 @@ describe('spec version 2', () => {
   });
 });
 
+describe('per-chart colors', () => {
+  const colored = (type: string, colors: unknown): ChartSpec =>
+    ({
+      version: CHART_SPEC_VERSION,
+      type,
+      data: {
+        source: 'inline',
+        labels: ['A', 'B'],
+        series: [
+          { name: 'S', values: [1, 2] },
+          { name: 'T', values: [3, 4] },
+        ],
+      },
+      options: { colors, legend: true },
+    }) as ChartSpec;
+
+  /** Every `fill` in the markup, in order. */
+  const fills = (svg: string): string[] => [...svg.matchAll(/fill="([^"]*)"/g)].map((m) => m[1]);
+
+  it('paints a series with the color the chart names', () => {
+    const svg = svgOf(colored('bar', ['#c00000', '#00c000']));
+
+    expect(fills(svg)).toContain('#c00000');
+    expect(fills(svg)).toContain('#00c000');
+    // Named outright rather than as a var() fallback: a chart that names a
+    // color is overruling the page's stylesheet on purpose.
+    expect(svg).not.toContain('var(--chart-series-1');
+    expect(svg).not.toContain('var(--chart-series-2');
+  });
+
+  it('leaves the page in charge of the indexes it skips', () => {
+    const svg = svgOf(colored('bar', [null, '#00c000']));
+
+    // Highlighting the second series should not cost the first its theme.
+    expect(svg).toContain('var(--chart-series-1');
+    expect(fills(svg)).toContain('#00c000');
+    expect(svg).not.toContain('var(--chart-series-2');
+  });
+
+  it('colors the legend to match the marks', () => {
+    const svg = svgOf(colored('bar', ['#c00000']));
+
+    // A legend swatch that disagreed with its bars would be worse than none.
+    const swatches = [...svg.matchAll(/<rect[^>]*fill="([^"]*)"/g)].map((m) => m[1]);
+    expect(swatches[0]).toBe('#c00000');
+  });
+
+  it('colors a pie by slice, which is what its legend names', () => {
+    const pie: ChartSpec = {
+      version: CHART_SPEC_VERSION,
+      type: 'pie',
+      data: {
+        source: 'inline',
+        labels: ['A', 'B', 'C'],
+        series: [{ name: 'S', values: [1, 2, 3] }],
+      },
+      options: { colors: [null, '#00c000'] },
+    };
+
+    // The second *slice*, not the second series - a pie has one.
+    expect(fills(svgOf(pie))).toContain('#00c000');
+  });
+
+  it('changes nothing when it is not set', () => {
+    const plain = colored('bar', undefined);
+    const empty = colored('bar', []);
+
+    expect(svgOf(empty)).toBe(svgOf(plain));
+    expect(svgOf(plain)).toContain('var(--chart-series-1');
+  });
+
+  it('refuses a color it will not write into an attribute', () => {
+    // Not a markup escape - attributes are escaped - but a paint value that
+    // would make the chart fetch from a third party when it renders.
+    const result = validateChartSpec(colored('bar', ['url(https://example.com/x#y)']));
+
+    expect(result.valid).toBe(false);
+    expect(result.issues[0].path).toBe('options.colors[0]');
+  });
+
+  it('accepts the notations a person actually types', () => {
+    const spec = colored('bar', [
+      '#abc',
+      '#aabbccdd',
+      'rgb(1 2 3)',
+      'rgba(1, 2, 3, 0.5)',
+      'hsl(210 40% 50%)',
+      'rebeccapurple',
+      'currentColor',
+    ]);
+
+    expect(validateChartSpec(spec).issues).toEqual([]);
+  });
+
+  it('names the entry that is wrong, not just the array', () => {
+    const result = validateChartSpec(colored('bar', [null, 42]));
+
+    expect(result.valid).toBe(false);
+    expect(result.issues[0].path).toBe('options.colors[1]');
+  });
+});
+
 describe('stacked area', () => {
   it('sizes the axis to the totals, not the tallest single band', () => {
     const svg = svgOf(fixtureById('area-stacked').spec);

@@ -32,7 +32,8 @@ import { DataGrid } from './DataGrid';
 import { PastePanel, type PasteOrigin } from './PastePanel';
 import { readAssetText, type MediaAsset } from './media';
 import { useMediaLibraryDialog } from './useMediaLibrary';
-import { normalizeShape, setType, typeChangeDiscardsSeries } from './edit';
+import { normalizeShape, setColor, setType, typeChangeDiscardsSeries } from './edit';
+import { ColorList } from './ColorList';
 
 export type ChartEditorProps = {
   spec: ChartSpec;
@@ -238,6 +239,12 @@ export function ChartEditor({ spec, onChange, disabled, locale }: ChartEditorPro
 
         <DataGrid spec={spec} onChange={update} disabled={disabled} />
       </Box>
+
+      <ColorList
+        spec={spec}
+        disabled={disabled}
+        onChange={(index, color) => update(setColor(spec, index, color))}
+      />
 
       {importError && (
         <Box padding={3} background="danger100" hasRadius>

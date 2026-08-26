@@ -156,6 +156,25 @@ export type ChartOptions = {
    * what every chart written before this option existed gets.
    */
   xAxis?: XAxis;
+  /**
+   * Colors for this chart, by index, overriding the page's palette.
+   *
+   * The palette normally lives in the site's CSS as `--chart-series-N`, which
+   * is the right default: it keeps every chart on brand without anyone typing
+   * hex codes into a CMS. This is the escape hatch for the chart that needs to
+   * say something the house style cannot - one series highlighted, red for the
+   * quarter that went wrong.
+   *
+   * Sparse on purpose. `null` or a missing entry keeps the CSS palette for that
+   * index, so highlighting the second of five series is `[null, '#c00']` rather
+   * than five colors. An index means whatever the legend is naming: a series in
+   * a bar or line chart, a slice in a pie.
+   *
+   * Values are CSS colors - hex, `rgb()`, `hsl()`, or a named color. Anything
+   * else is rejected by {@link validateChartSpec} rather than written into the
+   * markup.
+   */
+  colors?: (string | null)[];
 };
 
 /**

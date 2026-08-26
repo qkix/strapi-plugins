@@ -25,12 +25,14 @@ import { area as d3Area, line as d3Line } from 'd3-shape';
 
 import { computeStackedDomain, computeValueDomain, type Domain, type XPlacement } from '../scale';
 import { element, round, tag } from '../svg';
-import { seriesColor } from '../theme';
+import type { Palette } from '../theme';
 import type { AxisBounds, ChartData, ChartType, Series } from '../types';
 
 export type LineRenderInput = {
   data: ChartData;
   type: ChartType;
+  /** The paint for a series index - see `createPalette`. */
+  paint: Palette;
   /** Stacking applies to `area` only; a line is always read individually. */
   stacked: boolean;
   x: XPlacement;
@@ -70,7 +72,7 @@ export function lineDomain(
 
 /** The lines, and the fills beneath them when this is an area chart. */
 export function renderLine(input: LineRenderInput): string {
-  const { data, type, stacked, x, y, zero } = input;
+  const { data, type, stacked, x, y, zero, paint } = input;
   if (data.series.length === 0) return '';
 
   // A line marks an instant, so it sits at the middle of its category's band
@@ -114,7 +116,7 @@ export function renderLine(input: LineRenderInput): string {
                   .y0((point) => (point.base === null ? zero : y(point.base)))
                   .y1((point) => y(point.value as number))(points) ?? ''
               ),
-              fill: seriesColor(seriesIndex),
+              fill: paint(seriesIndex),
               'fill-opacity': AREA_OPACITY,
             })
           : '';
@@ -127,13 +129,13 @@ export function renderLine(input: LineRenderInput): string {
             .y((point) => y(point.value as number))(points) ?? ''
         ),
         fill: 'none',
-        stroke: seriesColor(seriesIndex),
+        stroke: paint(seriesIndex),
         'stroke-width': STROKE,
         'stroke-linecap': 'round',
         'stroke-linejoin': 'round',
       });
 
-      return fill + stroke + renderIsolatedPoints(points, y, seriesIndex);
+      return fill + stroke + renderIsolatedPoints(points, y, seriesIndex, paint);
     })
     .join('');
 
@@ -154,7 +156,8 @@ export function renderLine(input: LineRenderInput): string {
 function renderIsolatedPoints(
   points: readonly { cx: number; value: number | null }[],
   y: (value: number) => number,
-  seriesIndex: number
+  seriesIndex: number,
+  paint: Palette
 ): string {
   return points
     .map((point, i) => {
@@ -170,7 +173,7 @@ function renderIsolatedPoints(
         cx: round(point.cx),
         cy: round(y(point.value)),
         r: ISOLATED_POINT_RADIUS,
-        fill: seriesColor(seriesIndex),
+        fill: paint(seriesIndex),
       });
     })
     .join('');

@@ -11,6 +11,7 @@ import {
   removeSeries,
   replaceData,
   setCell,
+  setColor,
   setLabel,
   setSeriesName,
   setType,
@@ -235,5 +236,60 @@ describe('reading a number out of a cell', () => {
     ['-', null],
   ])('reads %s as %s', (input, expected) => {
     expect(toNumber(input)).toBe(expected);
+  });
+});
+
+describe('setting a color', () => {
+  it('stores the color at its own index', () => {
+    const next = setColor(spec(), 1, '#c00000');
+
+    expect(next.options?.colors).toEqual([null, '#c00000']);
+  });
+
+  it('pads with nulls rather than inventing the colors before it', () => {
+    // A null is "the page's palette decides this one", which is exactly what
+    // the untouched first two series should keep.
+    const next = setColor(spec(), 2, '#c00000');
+
+    expect(next.options?.colors).toEqual([null, null, '#c00000']);
+  });
+
+  it('leaves no trace once the last override is cleared', () => {
+    const set = setColor(spec(), 1, '#c00000');
+    const cleared = setColor(set, 1, null);
+
+    // Not [null, null]: a spec someone experimented with should end up
+    // identical to one that never had colors, or every such chart differs from
+    // the default while rendering the same.
+    expect(cleared.options?.colors).toBeUndefined();
+    expect('colors' in (cleared.options ?? {})).toBe(false);
+  });
+
+  it('keeps the earlier colors when a later one is cleared', () => {
+    const both = setColor(setColor(spec(), 0, '#c00000'), 1, '#00c000');
+    const cleared = setColor(both, 1, null);
+
+    expect(cleared.options?.colors).toEqual(['#c00000']);
+  });
+
+  it('keeps the rest of the options', () => {
+    const withStack: ChartSpec = {
+      ...spec(),
+      options: { stackMode: 'stacked', legend: false },
+    };
+
+    const next = setColor(withStack, 0, '#c00000');
+
+    expect(next.options?.stackMode).toBe('stacked');
+    expect(next.options?.legend).toBe(false);
+  });
+
+  it('returns a new spec rather than editing the one it was given', () => {
+    // Strapi's form state compares by reference to decide what is dirty.
+    const original = spec();
+    const next = setColor(original, 0, '#c00000');
+
+    expect(next).not.toBe(original);
+    expect(original.options?.colors).toBeUndefined();
   });
 });

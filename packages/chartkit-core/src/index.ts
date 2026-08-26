@@ -21,7 +21,8 @@ export type {
   ValueFormat,
 } from './types';
 
-export { seriesColor } from './theme';
+export { createPalette, seriesColor } from './theme';
+export type { Palette } from './theme';
 
 export { chartBlock, createChartBlock, CHART_BLOCK_TYPE } from './block';
 export type { ChartBlockNode } from './block';

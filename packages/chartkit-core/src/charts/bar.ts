@@ -9,12 +9,14 @@
 
 import { computeStackedDomain, computeValueDomain, type Domain, type XPlacement } from '../scale';
 import { element, round, tag } from '../svg';
-import { seriesColor } from '../theme';
+import type { Palette } from '../theme';
 import type { AxisBounds, StackMode, ChartData, Series } from '../types';
 
 export type BarRenderInput = {
   data: ChartData;
   mode: StackMode;
+  /** The paint for a series index - see `createPalette`. */
+  paint: Palette;
   x: XPlacement;
   y: (value: number) => number;
   /** Where the baseline sits, in SVG coordinates. */
@@ -52,9 +54,11 @@ export function barDomain(
 
 /** The bars themselves. Axes and legend are drawn by the caller. */
 export function renderBar(input: BarRenderInput): string {
-  const { data, mode, x, y, zero } = input;
+  const { data, mode, x, y, zero, paint } = input;
 
-  return mode === 'stacked' ? renderStackedBars(data, x, y) : renderGroupedBars(data, x, y, zero);
+  return mode === 'stacked'
+    ? renderStackedBars(data, x, y, paint)
+    : renderGroupedBars(data, x, y, zero, paint);
 }
 
 /**
@@ -68,7 +72,8 @@ function renderGroupedBars(
   data: ChartData,
   x: XPlacement,
   y: (value: number) => number,
-  zero: number
+  zero: number,
+  paint: Palette
 ): string {
   const series = data.series;
   if (series.length === 0) return '';
@@ -100,7 +105,7 @@ function renderGroupedBars(
             y: round(Math.min(top, zero)),
             width: round(barWidth),
             height: round(Math.abs(top - zero)),
-            fill: seriesColor(seriesIndex),
+            fill: paint(seriesIndex),
           });
         })
         .join('');
@@ -123,7 +128,12 @@ function renderGroupedBars(
  * Segments are emitted per category rather than per series, because a stack is
  * built by walking the series in order for one category at a time.
  */
-function renderStackedBars(data: ChartData, x: XPlacement, y: (value: number) => number): string {
+function renderStackedBars(
+  data: ChartData,
+  x: XPlacement,
+  y: (value: number) => number,
+  paint: Palette
+): string {
   const series = data.series;
   if (series.length === 0) return '';
 
@@ -158,7 +168,7 @@ function renderStackedBars(data: ChartData, x: XPlacement, y: (value: number) =>
             y: round(top),
             width: round(barWidth),
             height: round(Math.abs(bottom - top)),
-            fill: seriesColor(seriesIndex),
+            fill: paint(seriesIndex),
           });
         })
         .join('');
