@@ -166,6 +166,77 @@ describe('diff between consecutive versions', () => {
     expect(change.unlinked.map((r: any) => r.documentId)).toEqual([ada.documentId]);
   });
 
+  it('names both ends of a relation change', async () => {
+    const ada = await app.strapi.documents('api::person.person').create({ data: { name: 'Ada' } });
+    const grace = await app.strapi
+      .documents('api::person.person')
+      .create({ data: { name: 'Grace' } });
+
+    const article = await app.strapi
+      .documents(UID)
+      .create({ data: { title: 'A', author: ada.documentId } });
+    await settle();
+    await app.strapi
+      .documents(UID)
+      .update({ documentId: article.documentId, data: { author: grace.documentId } });
+    await settle();
+
+    const all = await versions();
+    const change = (await diff().between(all[1].id)).changes.find((c: any) => c.field === 'author');
+
+    // "the author changed from Ada to Grace", rather than two documentIds.
+    expect(change.linked.map((r: any) => r.label)).toEqual(['Grace']);
+    expect(change.unlinked.map((r: any) => r.label)).toEqual(['Ada']);
+  });
+
+  it('keeps the name a relation had, after the target is renamed', async () => {
+    const ada = await app.strapi.documents('api::person.person').create({ data: { name: 'Ada' } });
+
+    const article = await app.strapi
+      .documents(UID)
+      .create({ data: { title: 'A', author: ada.documentId } });
+    await settle();
+
+    await app.strapi
+      .documents('api::person.person')
+      .update({ documentId: ada.documentId, data: { name: 'Ada Lovelace' } });
+
+    await app.strapi
+      .documents(UID)
+      .update({ documentId: article.documentId, data: { title: 'B' } });
+    await settle();
+
+    const all = await versions();
+
+    // A version says what things were called at the time, which is the whole
+    // reason the name is stored rather than looked up.
+    expect((all[0].relations as any).author[0].label).toBe('Ada');
+    expect((all[1].relations as any).author[0].label).toBe('Ada Lovelace');
+  });
+
+  it('does not turn renaming a target into a version of its own', async () => {
+    const ada = await app.strapi.documents('api::person.person').create({ data: { name: 'Ada' } });
+
+    const article = await app.strapi
+      .documents(UID)
+      .create({ data: { title: 'A', author: ada.documentId } });
+    await settle();
+
+    await app.strapi
+      .documents('api::person.person')
+      .update({ documentId: ada.documentId, data: { name: 'Ada Lovelace' } });
+
+    // A save that changed nothing about the article. The label the article
+    // carries for its author did change, and must not count as content - it
+    // would produce a version whose diff is empty.
+    await app.strapi
+      .documents(UID)
+      .update({ documentId: article.documentId, data: { title: 'A' } });
+    await settle();
+
+    expect(await versions()).toHaveLength(1);
+  });
+
   it('reports no changes between identical content', async () => {
     const article = await app.strapi.documents(UID).create({ data: { title: 'Same' } });
     await settle();

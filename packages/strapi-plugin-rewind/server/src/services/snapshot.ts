@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto';
 
 import type { Core } from '@strapi/strapi';
 
-import { buildDeepPopulate, split } from './serializer';
-import { createLabeller } from '../utils/versionLabel';
+import { buildDeepPopulate, labelFieldsFor, split, withoutLabels } from './serializer';
+import type { LabelFields } from './serializer';
+import { createLabeller, createMainFieldResolver } from '../utils/versionLabel';
 import type { SnapshotIntent } from '../utils/captureContext';
 
 export const VERSION_UID = 'plugin::rewind.version';
@@ -22,6 +23,24 @@ const hash = (payload: unknown): string =>
 
 const snapshot = ({ strapi }: { strapi: Core.Strapi }) => {
   const labelFor = createLabeller(strapi);
+  const mainFieldFor = createMainFieldResolver(strapi);
+
+  /**
+   * Which field names the target of each relation, cached per content type.
+   *
+   * Resolved here rather than inside the serializer because it is asynchronous
+   * - the answer lives in the Content Manager's configuration - and both the
+   * populate and the split need the same answer.
+   */
+  const labelFieldsByUid = new Map<string, Promise<LabelFields>>();
+  const labelFields = (uid: string): Promise<LabelFields> => {
+    let fields = labelFieldsByUid.get(uid);
+    if (!fields) {
+      fields = labelFieldsFor(strapi, uid, mainFieldFor);
+      labelFieldsByUid.set(uid, fields);
+    }
+    return fields;
+  };
 
   const hasDraftAndPublish = (uid: string): boolean =>
     Boolean((strapi.contentTypes[uid] as any)?.options?.draftAndPublish);
@@ -59,7 +78,7 @@ const snapshot = ({ strapi }: { strapi: Core.Strapi }) => {
         ...localeFilter,
         ...(hasDraftAndPublish(uid) ? { publishedAt: null } : {}),
       },
-      populate: buildDeepPopulate(strapi, uid),
+      populate: buildDeepPopulate(strapi, uid, true, await labelFields(uid)),
     });
   };
 
@@ -107,8 +126,9 @@ const snapshot = ({ strapi }: { strapi: Core.Strapi }) => {
 
       for (const row of rows) {
         const rowLocale = (row.locale as string | null) ?? null;
-        const { data, relations, schemaSnapshot } = split(strapi, uid, row);
-        const contentHash = hash({ data, relations });
+        const { data, relations, schemaSnapshot } = split(strapi, uid, row, await labelFields(uid));
+        // Labels are left out of the hash on purpose - see `withoutLabels`.
+        const contentHash = hash({ data, relations: withoutLabels(relations) });
 
         if (!ANCHORS.has(origin)) {
           const previous = await lastVersion(uid, relatedDocumentId, rowLocale);

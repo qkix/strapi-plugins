@@ -98,6 +98,12 @@ relations, and a snapshot of the schema at the time - the last of which is what
 lets a restore tell "this field was empty" apart from "this field did not exist
 yet".
 
+A relation is stored as what it pointed at _and_ what that was called, using the
+field the Content Manager titles the entry by. Storing the name is what makes a
+history readable once the target is gone: the id of a deleted author resolves to
+nothing, and "Ada Lovelace no longer exists and will be left out" is the sentence
+an editor needs.
+
 Publishing records **one** version, not two, even though the Content Manager
 saves the draft and publishes it as two separate operations.
 
@@ -142,7 +148,12 @@ Scalars are shown as a plain before and after. Prose - including rich text
 stored as JSON - is compared word by word, with the unchanged stretches
 collapsed, so a one-word edit in a long article reads as one word rather than
 as the whole article with something green in it somewhere. Relations are
-reported as linked and unlinked.
+reported as linked and unlinked, by name where the version has one.
+
+<img src="https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-rewind/docs/relations.png" alt="The What changed dialog showing the featured relation: plus Plugin showcase in green, minus Autumn release notes in red" width="760" />
+
+The name comes from the version, not from the target, so it still reads this way
+once the target has been deleted.
 
 Where a field's stored value changed but its readable text did not - a mark
 applied, blocks reordered - it says so, rather than showing an empty diff.
@@ -225,9 +236,13 @@ Worth knowing before you install it, not after:
 - **Only the Document Service is visible.** Writes made through
   `strapi.db.query()` or the legacy entity service bypass the middleware
   entirely and cannot be captured at any setting.
-- **Deleted relation targets lose their names.** A version stores which document
-  a relation pointed at, not what it was called, so a link to something since
-  deleted shows as missing rather than as "the article it used to be".
+- **A relation's name is a snapshot too.** A version records what the target was
+  called when it was taken, so a link survives the target being deleted. It does
+  not follow a later rename: a version from March says what the author was called
+  in March, which is the point.
+- **Versions taken before names were recorded have none**, and fall back to
+  counting - "2 linked items" - because a name cannot be recovered after the
+  fact.
 - **Media is referenced, never copied.** Delete the file and the version knows
   the file is gone; it cannot bring it back.
 

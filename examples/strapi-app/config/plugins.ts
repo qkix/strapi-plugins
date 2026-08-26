@@ -28,7 +28,10 @@ const config = ({
     enabled: true,
     resolve: '../../packages/strapi-plugin-rewind',
     config: {
-      contentTypes: ['api::article.article'],
+      // Page as well as Article, because Page is the one with a relation - and
+      // a relation is where a version has to remember what it pointed at, not
+      // just which row it was.
+      contentTypes: ['api::article.article', 'api::page.page'],
     },
   },
   /**

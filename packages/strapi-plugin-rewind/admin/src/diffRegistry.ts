@@ -7,6 +7,21 @@ export interface DiffSpan {
   value: string;
 }
 
+/** One end of a relation, as a version recorded it. */
+export interface RelationRef {
+  documentId?: string;
+  /** Media is addressed by numeric id rather than by documentId. */
+  id?: number;
+  targetUid: string;
+  /**
+   * What the target was called when the version was taken.
+   *
+   * Absent on versions written before Rewind recorded it, and on a target whose
+   * type has no field that reads as a name - so always render a fallback.
+   */
+  label?: string;
+}
+
 export interface FieldChange {
   field: string;
   type: string;
@@ -16,8 +31,8 @@ export interface FieldChange {
   before?: unknown;
   after?: unknown;
   spans?: DiffSpan[];
-  linked?: { documentId?: string; id?: number; targetUid: string }[];
-  unlinked?: { documentId?: string; id?: number; targetUid: string }[];
+  linked?: RelationRef[];
+  unlinked?: RelationRef[];
 }
 
 export type DiffRenderer = React.ComponentType<{ change: FieldChange }>;

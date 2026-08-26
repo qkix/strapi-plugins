@@ -136,6 +136,13 @@ Adding a dependency to an example app is a `chore`, however much it fixed
 something locally - nothing shipped. Check with
 `nx show projects --affected --files=<path>` when unsure.
 
+**The scope is the package's directory name.** `feat(strapi-plugin-rewind)`,
+not `feat(rewind)`. nx resolves a scope against project names and directory
+names, and a scope it cannot resolve is not an error - the commit is treated as
+an _indirect_ change to every package it touched and quietly downgraded to a
+patch. So `feat(rewind)` ships a feature as a patch and says nothing about it.
+Check a scope with `nx show projects --projects=<scope>` before relying on it.
+
 Releases are cut with `nx release`: versions, tags and changelogs are per
 package, so a change to one does not bump the others. The release workflow is
 manual and defaults to a dry run. A `feat` is a minor and a `fix` is a patch,

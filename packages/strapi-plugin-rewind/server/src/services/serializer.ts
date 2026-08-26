@@ -21,6 +21,8 @@
  */
 import type { Core } from '@strapi/strapi';
 
+import { LABEL_FIELD_CANDIDATES } from '../utils/versionLabel';
+
 /**
  * Identity, not content. `id` is the dangerous one: it is what a restore would
  * try to write back into a row that has since been recreated. The rest live in
@@ -54,6 +56,15 @@ export interface RelationRef {
   id?: number;
   locale?: string | null;
   targetUid: string;
+  /**
+   * What the target was called when the version was taken.
+   *
+   * Stored rather than looked up, because the moment it matters is the moment
+   * it can no longer be looked up: a relation to a since-deleted document would
+   * otherwise read as an id and a shrug. Absent on versions written before this
+   * was recorded, and on a target whose type has no field that reads as a name.
+   */
+  label?: string;
 }
 
 export interface SplitDocument {
@@ -83,6 +94,88 @@ export const isMorphRelation = (attribute: Attribute): boolean =>
     .toLowerCase()
     .startsWith('morph');
 
+/** Media is a relation to one particular content type, and always has been. */
+export const MEDIA_UID = 'plugin::upload.file';
+
+/** The field to read a target's name from, per target uid. */
+export type LabelFields = Map<string, string>;
+
+/**
+ * Attribute types whose value reads as a name.
+ *
+ * A number or a date identifies a row without describing it, and a relation
+ * labelled `42` is no more readable than the id it already had. Better to
+ * record no label than a misleading one.
+ */
+const NAMEABLE_TYPES = new Set(['string', 'uid', 'email', 'text', 'enumeration']);
+
+/**
+ * Which field names a target of each relation on this content type.
+ *
+ * The Content Manager's configured `mainField` first, so a version agrees with
+ * what the relation input in the editor shows, then the usual suspects. The
+ * result is validated against the target's own attributes: a `mainField` can
+ * name a field that has since been deleted, and selecting a column that is not
+ * there fails the whole snapshot rather than one label.
+ *
+ * Async because the configuration lives in the store. Resolved once per
+ * capture, not once per relation - see the cache in `createMainFieldResolver`.
+ */
+export const labelFieldsFor = async (
+  strapi: Core.Strapi,
+  uid: string,
+  mainFieldFor: (targetUid: string) => Promise<string | undefined>
+): Promise<LabelFields> => {
+  const fields: LabelFields = new Map();
+
+  const resolve = async (targetUid: string) => {
+    if (!targetUid || fields.has(targetUid)) return;
+
+    let attributes: Record<string, Attribute>;
+    try {
+      attributes = getModel(strapi, targetUid).attributes;
+    } catch {
+      // The target type is gone from the model. Nothing to read a name from.
+      return;
+    }
+
+    const nameable = (field: string | undefined): field is string =>
+      Boolean(field) && NAMEABLE_TYPES.has(attributes[field as string]?.type);
+
+    const candidate = [await mainFieldFor(targetUid), ...LABEL_FIELD_CANDIDATES].find(nameable);
+    if (candidate) fields.set(targetUid, candidate);
+  };
+
+  for (const attribute of Object.values(getModel(strapi, uid).attributes)) {
+    if (attribute?.type === 'media') await resolve(MEDIA_UID);
+    else if (attribute?.type === 'relation' && !isMorphRelation(attribute)) {
+      await resolve(attribute.target);
+    }
+  }
+
+  return fields;
+};
+
+/**
+ * The same relations with their labels taken off.
+ *
+ * Content hashes are what stops an unchanged save becoming a version, and a
+ * label is not content: renaming an author does not change which author an
+ * article points at. Hashing it would make the next save of every article
+ * mentioning that author look like an edit, and produce a version whose diff is
+ * empty. Stripping here also keeps hashes written before labels existed valid.
+ */
+export const withoutLabels = (
+  relations: Record<string, RelationRef[]>
+): Record<string, RelationRef[]> =>
+  Object.fromEntries(
+    Object.entries(relations).map(([field, refs]) => [
+      field,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      refs.map(({ label, ...rest }) => rest),
+    ])
+  );
+
 /**
  * Every scalar field of a component except its id.
  *
@@ -97,26 +190,48 @@ const componentFields = (strapi: Core.Strapi, componentUid: string): string[] =>
     )
     .map(([name]) => name);
 
-/** Populate object covering everything a snapshot needs, and nothing more. */
+/**
+ * Populate object covering everything a snapshot needs, and nothing more.
+ *
+ * `labelFields` names, per target uid, the one extra column to read so the
+ * relation can be recorded with the target's name as well as its id - see
+ * {@link labelFieldsFor}. It is applied to this level only, never to the
+ * recursion: a relation nested inside a component is stored as part of `data`
+ * rather than extracted, so widening its select would change what a component
+ * holds, and with it every content hash ever computed.
+ */
 export const buildDeepPopulate = (
   strapi: Core.Strapi,
   uid: string,
-  useDatabaseSyntax = true
+  useDatabaseSyntax = true,
+  labelFields?: LabelFields
 ): Record<string, unknown> => {
   const model = getModel(strapi, uid);
   const fieldSelector = useDatabaseSyntax ? 'select' : 'fields';
+  const labelField = (targetUid: string): string[] => {
+    const field = labelFields?.get(targetUid);
+    return field ? [field] : [];
+  };
 
   return Object.entries(model.attributes).reduce(
     (acc: Record<string, unknown>, [name, attribute]: [string, Attribute]) => {
       switch (attribute.type) {
         case 'relation': {
           if (isMorphRelation(attribute)) break;
-          // Only what identifies the target - never the target itself.
-          acc[name] = { [fieldSelector]: ['documentId', 'locale', 'publishedAt'] };
+          // Only what identifies the target, plus what it is called - never the
+          // target itself.
+          acc[name] = {
+            [fieldSelector]: [
+              'documentId',
+              'locale',
+              'publishedAt',
+              ...labelField(attribute.target),
+            ],
+          };
           break;
         }
         case 'media': {
-          acc[name] = { [fieldSelector]: ['id'] };
+          acc[name] = { [fieldSelector]: ['id', ...labelField(MEDIA_UID)] };
           break;
         }
         case 'component': {
@@ -190,18 +305,31 @@ export const buildSchemaSnapshot = (strapi: Core.Strapi, uid: string): Record<st
 const omit = <T extends Record<string, unknown>>(source: T, keys: string[]): T =>
   Object.fromEntries(Object.entries(source ?? {}).filter(([key]) => !keys.includes(key))) as T;
 
-const toRefs = (value: unknown, targetUid: string, isMedia: boolean): RelationRef[] => {
+const toRefs = (
+  value: unknown,
+  targetUid: string,
+  isMedia: boolean,
+  labelField?: string
+): RelationRef[] => {
   const entries = Array.isArray(value) ? value : [value];
+
+  const labelOf = (entry: Record<string, unknown>): { label?: string } => {
+    const label = labelField ? entry[labelField] : undefined;
+    // Trimmed and capped like a version's own label, and omitted rather than
+    // stored empty so `label` reads as "this was never recorded".
+    return typeof label === 'string' && label.trim() ? { label: label.trim().slice(0, 255) } : {};
+  };
 
   return entries
     .filter((entry): entry is Record<string, unknown> => Boolean(entry))
     .map((entry) =>
       isMedia
-        ? { id: entry.id as number, targetUid }
+        ? { id: entry.id as number, targetUid, ...labelOf(entry) }
         : {
             documentId: entry.documentId as string,
             locale: (entry.locale as string | null) ?? null,
             targetUid,
+            ...labelOf(entry),
           }
     );
 };
@@ -216,7 +344,8 @@ const toRefs = (value: unknown, targetUid: string, isMedia: boolean): RelationRe
 export const split = (
   strapi: Core.Strapi,
   uid: string,
-  entry: Record<string, unknown>
+  entry: Record<string, unknown>,
+  labelFields?: LabelFields
 ): SplitDocument => {
   const attributes = getModel(strapi, uid).attributes;
   const data: Record<string, unknown> = {};
@@ -229,8 +358,13 @@ export const split = (
 
     if (attribute && isRelationLike(attribute)) {
       if (isMorphRelation(attribute)) continue;
-      const targetUid = attribute.type === 'media' ? 'plugin::upload.file' : attribute.target;
-      relations[name] = toRefs(value, targetUid, attribute.type === 'media');
+      const targetUid = attribute.type === 'media' ? MEDIA_UID : attribute.target;
+      relations[name] = toRefs(
+        value,
+        targetUid,
+        attribute.type === 'media',
+        labelFields?.get(targetUid)
+      );
       continue;
     }
 

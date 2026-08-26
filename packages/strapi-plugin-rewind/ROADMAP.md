@@ -10,21 +10,15 @@ Ideas and disagreement welcome at
 
 ## Next
 
-### Remember what a relation pointed at
-
-A version stores which document a relation pointed at, not what it was called,
-so a link to something since deleted shows as missing rather than as "the
-article it used to be". Storing a display name alongside the id at snapshot time
-would make a restore preview readable after the target is gone, which is exactly
-when the history matters.
-
-## Later
-
 ### Restore one field rather than the whole document
 
 Putting a whole document back is the blunt version of what people often want,
 which is to undo one paragraph while keeping everything edited since. The diff
-already knows which fields differ.
+already knows which fields differ, and the panel already shows them one by one,
+so the missing piece is a restore that takes a list of fields rather than all of
+them - and a preview that says what the rest of the document keeps.
+
+## Later
 
 ### A history across documents
 
