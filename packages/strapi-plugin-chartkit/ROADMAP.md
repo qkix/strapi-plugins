@@ -10,25 +10,18 @@ Ideas and disagreement welcome at
 
 ## Next
 
-### Colours per chart, not only per site
-
-Palettes are set in your site's CSS, which is the right default: it keeps every
-chart on brand without anyone picking hex codes in a CMS. It also means a single
-chart that needs one series highlighted has no way to say so. A per-chart
-override, falling back to the CSS palette when unset, would cover that without
-losing the default.
-
-## Later
-
 ### Numbers from a collection rather than stored with the chart
 
 Data lives with the chart, so a chart of something that changes is a chart
 somebody has to remember to update. Pointing a chart at a content type and a
 field would make it current by construction.
 
-The reason this is not next is that it moves Chartkit from rendering into
-querying, which is a much larger surface: filters, aggregation, permissions on
-the underlying data, and what a chart does when the query returns nothing.
+It is the largest thing on this list, because it moves Chartkit from rendering
+into querying: filters, aggregation, permissions on the underlying data, and an
+answer for what a chart does when the query returns nothing. Worth doing in that
+order rather than in one go.
+
+## Later
 
 ### Optional tooltips
 

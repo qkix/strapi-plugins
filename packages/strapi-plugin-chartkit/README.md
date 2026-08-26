@@ -167,6 +167,21 @@ SSR chart renderer. The obvious candidate, ECharts in SSR mode, writes its
 palette into the markup as literal hex values - which makes class-based dark
 mode impossible without post-processing the output.
 
+### When one chart needs to say something else
+
+Under **Colors** in the editor there is a swatch per series - per slice, on a pie
+or donut. Leave one alone and it keeps following your stylesheet; set one and
+that series overrules it, which is what picking out a single line or reddening
+the quarter that went wrong requires.
+
+Only the entries you set are stored, so highlighting one series does not freeze
+the colors of the others against your next restyle. The cross beside a swatch
+hands that series back to the site.
+
+A color set here beats the CSS on purpose. The stylesheet is the house style; a
+chart that names a color is overruling it for a reason, and a house style that
+could silently repaint it would be no override at all.
+
 ## Also a block, if you use Better Blocks
 
 <img src="https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-chartkit/docs/block.png" alt="A chart block inside a Better Blocks rich-text document" width="700" />
@@ -221,9 +236,9 @@ script, or a field that used to be a different type - it says so and goes
 
 ## Not there yet
 
-Being honest about the edges: no tooltips or other interactivity, and no
-per-chart color overrides - palettes are set in your site's CSS. Data is stored
-with the chart rather than queried from a collection.
+Being honest about the edges: no tooltips or other interactivity. Data is stored
+with the chart rather than queried from a collection, so a chart of something
+that changes is a chart somebody has to remember to update.
 
 Issues and ideas welcome at
 [qkix/strapi-plugins](https://github.com/qkix/strapi-plugins/issues).
