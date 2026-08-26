@@ -26,6 +26,22 @@ export interface RestorePreview {
 
 type Attribute = Record<string, any>;
 
+/**
+ * The targets a restore had to leave out, named where the version knows them.
+ *
+ * The whole reason for recording a name at snapshot time is this sentence: by
+ * the time it is written the target is gone, so its id can no longer be turned
+ * into anything an editor recognises. Versions taken before names were recorded
+ * fall back to a count.
+ */
+const describeLost = (refs: RelationRef[]): string => {
+  const named = refs.map((ref) => ref.label).filter(Boolean) as string[];
+  if (named.length === 0) return `${refs.length} target(s)`;
+
+  const unnamed = refs.length - named.length;
+  return unnamed ? `${named.join(', ')} and ${unnamed} more` : named.join(', ');
+};
+
 const restore = ({ strapi }: { strapi: Core.Strapi }) => {
   const model = (uid: string) =>
     strapi.getModel(uid as never) as unknown as {
@@ -187,9 +203,8 @@ const restore = ({ strapi }: { strapi: Core.Strapi }) => {
         );
 
         if (survivors.length !== refs.length) {
-          warnings.push(
-            `${refs.length - survivors.length} target(s) of "${name}" no longer exist and were skipped.`
-          );
+          const lost = refs.filter((ref) => !survivors.includes(ref));
+          warnings.push(`${describeLost(lost)} of "${name}" no longer exist and were skipped.`);
         }
 
         data[name] = survivors.map((ref) =>

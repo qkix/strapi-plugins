@@ -178,11 +178,14 @@ describe('preview', () => {
     const preview = await restore().preview(version.id as number);
 
     expect(preview.brokenRelations).toHaveLength(1);
+    // The name is what survives the deletion; the documentId no longer resolves
+    // to anything an editor could recognise.
+    expect(preview.brokenRelations[0].label).toBe('Ada');
 
     // And restoring anyway must not throw - it drops the target and says so.
     const result = await restore().apply(version.id as number, null);
     await settle();
-    expect(result.warnings.join(' ')).toMatch(/no longer exist/);
+    expect(result.warnings.join(' ')).toMatch(/Ada .* no longer exist/);
 
     const draft = await app.strapi
       .documents(UID)

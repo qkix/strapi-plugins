@@ -17,6 +17,8 @@ import { Pin } from '@strapi/icons';
 
 import { ChangesDialog, type VersionDiff } from './ChangesDialog';
 
+import type { RelationRef } from '../diffRegistry';
+
 import { PLUGIN_ID } from '../pluginId';
 
 interface VersionRow {
@@ -37,10 +39,30 @@ interface RestorePreview {
   fieldsDropped: string[];
   crossLocaleFields: string[];
   unsupportedFields: string[];
-  brokenRelations: unknown[];
-  missingMedia: unknown[];
+  brokenRelations: RelationRef[];
+  missingMedia: RelationRef[];
   affectedLocales: string[];
 }
+
+/**
+ * The warning about targets a restore cannot bring back.
+ *
+ * Named where the version recorded a name, because "2 linked items no longer
+ * exist" leaves an editor with no way to find out which two - the answer is
+ * precisely what deletion took away. Versions written before Rewind stored
+ * names fall back to the count.
+ */
+const missingTargets = (preview: RestorePreview): string => {
+  const refs = [...preview.brokenRelations, ...preview.missingMedia];
+  const named = refs.map((ref) => ref.label).filter(Boolean) as string[];
+  const items = `${refs.length} linked item${refs.length === 1 ? '' : 's'}`;
+
+  if (named.length === 0) return `${items} no longer exist and will be left out.`;
+
+  const unnamed = refs.length - named.length;
+  const list = unnamed ? `${named.join(', ')} and ${unnamed} more` : named.join(', ');
+  return `${list} no longer exist${refs.length === 1 ? 's' : ''} and will be left out.`;
+};
 
 /**
  * What each origin is called in the panel.
@@ -394,9 +416,7 @@ const PanelContent = ({
 
               {pending?.preview.brokenRelations.length || pending?.preview.missingMedia.length ? (
                 <Typography variant="pi" textColor="warning600">
-                  {(pending.preview.brokenRelations.length ?? 0) +
-                    (pending.preview.missingMedia.length ?? 0)}{' '}
-                  linked item(s) no longer exist and will be left out.
+                  {missingTargets(pending.preview)}
                 </Typography>
               ) : null}
             </Flex>

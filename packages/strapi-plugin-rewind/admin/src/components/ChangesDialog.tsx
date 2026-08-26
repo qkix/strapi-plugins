@@ -11,7 +11,12 @@ import {
   Typography,
 } from '@strapi/design-system';
 
-import { getDiffRenderer, type FieldChange, type DiffSpan } from '../diffRegistry';
+import {
+  getDiffRenderer,
+  type DiffSpan,
+  type FieldChange,
+  type RelationRef,
+} from '../diffRegistry';
 
 export interface VersionDiff {
   from: { id: number; label: string | null; origin: string } | null;
@@ -46,6 +51,23 @@ const Spans = ({ spans }: { spans: DiffSpan[] }) => (
   </Typography>
 );
 
+/**
+ * What was linked or unlinked, named where the version knows the name.
+ *
+ * A relation reads as "the author changed to Jane Doe", not as "one relation
+ * changed", and the point of storing the name at snapshot time is that it
+ * survives the target being deleted. Versions taken before Rewind recorded
+ * names have none, so this falls back to counting rather than listing ids -
+ * a row of documentIds tells a reader less than the number does.
+ */
+const describeRefs = (refs: RelationRef[]): string => {
+  const named = refs.map((ref) => ref.label).filter(Boolean) as string[];
+  if (named.length === 0) return `${refs.length} item${refs.length === 1 ? '' : 's'}`;
+
+  const unnamed = refs.length - named.length;
+  return unnamed ? `${named.join(', ')} and ${unnamed} more` : named.join(', ');
+};
+
 const asText = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '(empty)';
   if (typeof value === 'object') return JSON.stringify(value);
@@ -69,12 +91,12 @@ const Change = ({ change }: { change: FieldChange }) => {
       <Flex direction="column" alignItems="flex-start" gap={1}>
         {change.linked?.length ? (
           <Typography variant="pi" textColor="success600">
-            + {change.linked.length} linked
+            + {describeRefs(change.linked)}
           </Typography>
         ) : null}
         {change.unlinked?.length ? (
           <Typography variant="pi" textColor="danger600">
-            − {change.unlinked.length} unlinked
+            − {describeRefs(change.unlinked)}
           </Typography>
         ) : null}
       </Flex>
