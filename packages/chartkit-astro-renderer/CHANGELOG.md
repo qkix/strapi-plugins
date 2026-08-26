@@ -1,3 +1,7 @@
+## 0.2.7 (2026-08-26)
+
+This was a version bump only for @qkix/chartkit-astro-renderer to align it with other projects, there were no code changes.
+
 ## 0.2.6 (2026-08-20)
 
 This was a version bump only for @qkix/chartkit-astro-renderer to align it with other projects, there were no code changes.

@@ -1,3 +1,13 @@
+## 0.4.0 (2026-08-26)
+
+### 🚀 Features
+
+- **strapi-plugin-rewind:** remember what a relation pointed at ([#174](https://github.com/qkix/strapi-plugins/pull/174))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.3.0 (2026-08-20)
 
 ### 🚀 Features

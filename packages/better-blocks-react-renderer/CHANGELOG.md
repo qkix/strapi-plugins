@@ -1,3 +1,7 @@
+## 0.18.8 (2026-08-26)
+
+This was a version bump only for @qkix/better-blocks-react-renderer to align it with other projects, there were no code changes.
+
 ## 0.18.7 (2026-08-20)
 
 ### 🚀 Features
