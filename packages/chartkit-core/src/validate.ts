@@ -85,9 +85,64 @@ export function validateChartSpec(value: unknown): ChartValidationResult {
     fail('options', 'options must be an object');
   } else if (isObject(value.options)) {
     validateXAxis(value.options.xAxis, value.data, fail);
+    validateColors(value.options.colors, fail);
   }
 
   return { valid: issues.length === 0, issues };
+}
+
+/**
+ * CSS colors this package is willing to write into an attribute.
+ *
+ * An allowlist rather than "any string". The value lands in a `fill`, and while
+ * {@link import('./svg').escapeAttribute} means it cannot break out of the
+ * attribute, that is a reason not to worry about markup rather than a reason to
+ * accept anything: `url(https://…)` is a valid paint value that would make a
+ * chart fetch from a third party on render, and a typo is better reported than
+ * drawn as black.
+ *
+ * Covers hex with or without alpha, the functional notations, and bare
+ * identifiers - which is every named color plus `currentColor`, `none` and
+ * `transparent`.
+ */
+const COLOR = /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9a-z.,%/\s+-]+\)|[a-z]{3,20})$/i;
+
+/**
+ * How many colors a chart may name.
+ *
+ * Far past the eight the fallback palette holds and the number of series a
+ * reader can follow, so it never binds in practice - it is here so a corrupt
+ * document cannot carry a million-entry array through validation.
+ */
+const MAX_COLORS = 64;
+
+function validateColors(colors: unknown, fail: (path: string, message: string) => void): void {
+  if (colors === undefined) return;
+
+  if (!Array.isArray(colors)) {
+    fail('options.colors', 'colors must be an array');
+    return;
+  }
+
+  if (colors.length > MAX_COLORS) {
+    fail('options.colors', `colors holds more than ${MAX_COLORS} entries`);
+    return;
+  }
+
+  colors.forEach((color, index) => {
+    // null and '' are how a chart says "leave this one to the page's palette",
+    // which is what makes the array sparse rather than all-or-nothing.
+    if (color === null || color === '') return;
+
+    if (typeof color !== 'string') {
+      fail(`options.colors[${index}]`, 'a color must be a string, or null to use the default');
+      return;
+    }
+
+    if (!COLOR.test(color.trim())) {
+      fail(`options.colors[${index}]`, `"${color}" is not a CSS color this renderer accepts`);
+    }
+  });
 }
 
 /**

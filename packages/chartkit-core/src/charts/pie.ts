@@ -17,13 +17,15 @@ import { arc as d3Arc, pie as d3Pie } from 'd3-shape';
 import type { PlotArea } from '../layout';
 import { LABEL_FONT_SIZE, estimateTextWidth } from '../layout';
 import { element, round, tag, text } from '../svg';
-import { seriesColor } from '../theme';
+import type { Palette } from '../theme';
 import type { ChartData, ChartType } from '../types';
 
 export type PieRenderInput = {
   data: ChartData;
   type: ChartType;
   plot: PlotArea;
+  /** The paint for a slice index - see `createPalette`. */
+  paint: Palette;
 };
 
 /** Hole size for a donut, as a fraction of the outer radius. */
@@ -39,7 +41,7 @@ const LABEL_RADIUS_RATIO = 0.55;
 
 /** The slices, and the share labels on the ones with room. */
 export function renderPie(input: PieRenderInput): string {
-  const { data, type, plot } = input;
+  const { data, type, plot, paint } = input;
 
   const series = data.series[0];
   if (!series) return '';
@@ -81,7 +83,7 @@ export function renderPie(input: PieRenderInput): string {
 
       const path = tag('path', {
         d: roundPath(shape(datum) ?? ''),
-        fill: seriesColor(index),
+        fill: paint(index),
       });
 
       const share = formatShare(datum.value, total);

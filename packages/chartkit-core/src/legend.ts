@@ -13,7 +13,7 @@
 
 import { LEGEND_FONT_SIZE, estimateTextWidth } from './layout';
 import { element, round, tag, text } from './svg';
-import { TEXT_COLOR, seriesColor } from './theme';
+import { TEXT_COLOR, type Palette } from './theme';
 
 /** Side of the color swatch. */
 const SWATCH = 10;
@@ -94,7 +94,7 @@ export function planLegend(names: readonly string[], maxWidth: number): LegendPl
  * `top` is where the legend's first row begins; `width` is the full chart
  * width, which each row is centered within.
  */
-export function renderLegend(plan: LegendPlan, top: number, width: number): string {
+export function renderLegend(plan: LegendPlan, top: number, width: number, paint: Palette): string {
   if (plan.rows.length === 0) return '';
 
   const rows = plan.rows
@@ -114,7 +114,7 @@ export function renderLegend(plan: LegendPlan, top: number, width: number): stri
             width: SWATCH,
             height: SWATCH,
             rx: 2,
-            fill: seriesColor(entry.index),
+            fill: paint(entry.index),
           });
 
           const label = text(entry.name, {

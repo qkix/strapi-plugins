@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { renderChart } from '@qkix/chartkit-core';
-import { fixtures } from '@qkix/chartkit-core/fixtures';
+import { fixtures, fixtureById } from '@qkix/chartkit-core/fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -52,6 +52,35 @@ function card(fixture) {
         <summary>spec</summary>
         <pre>${escapeHtml(JSON.stringify(fixture.spec, null, 2))}</pre>
       </details>
+    </section>`;
+}
+
+/**
+ * The same fixture again, on a page that defines a palette.
+ *
+ * Every other card renders against no stylesheet at all, which is the right
+ * default to look at - it is what an unstyled install gets. But it means the
+ * fallback colors are the only ones on the page, and a per-chart color that
+ * quietly stopped deferring to the site would look identical here. This card is
+ * the control.
+ */
+function themedCard(id) {
+  const fixture = fixtureById(id);
+  const result = renderChart(fixture.spec, {
+    locale: 'en-US',
+    idPrefix: `fx-themed-${fixture.id}`,
+  });
+
+  return `
+    <section class="card themed">
+      <header>
+        <h2>${escapeHtml(fixture.id)} (on a themed site)</h2>
+        <p class="breaks">
+          the same spec where the page sets a palette - the two baselines must take the
+          site's colors, and the highlighted series must keep its own
+        </p>
+      </header>
+      <div class="chart">${result.ok ? result.svg : ''}</div>
     </section>`;
 }
 
@@ -118,6 +147,18 @@ const page = `<!doctype html>
       .chart { background: var(--bg); border-radius: 6px; padding: 0.5rem; }
       .chart svg { display: block; width: 100%; height: auto; }
 
+      /*
+       * A site's own palette, which is where a palette is supposed to live.
+       * Applied to one card so the half of per-chart colors that is easy to
+       * break stays visible: an index the chart leaves alone must still take
+       * its color from here, and an index the chart names must not.
+       */
+      .themed .chart {
+        --chart-series-1: #1b998b;
+        --chart-series-2: #2e4057;
+        --chart-series-3: #8f2d56;
+      }
+
       details { margin-top: 0.75rem; }
       summary { cursor: pointer; color: var(--muted); font-size: 0.8rem; }
       pre {
@@ -137,7 +178,7 @@ const page = `<!doctype html>
       something specific - the note under each title says what to look for. Nothing on this
       page runs JavaScript; every chart is an SVG string produced at build time.
     </p>
-    <div class="grid">${fixtures.map(card).join('')}</div>
+    <div class="grid">${fixtures.map(card).join('')}${themedCard('one-series-highlighted')}</div>
   </body>
 </html>
 `;

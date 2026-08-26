@@ -489,6 +489,41 @@ export const fixtures: Fixture[] = [
       options: { xAxis: { type: 'time' } },
     },
   },
+  {
+    id: 'one-series-highlighted',
+    breaks: 'a chart color that has to beat the page and one that must not',
+    spec: multi(
+      'One series picked out',
+      ['Q1', 'Q2', 'Q3', 'Q4'],
+      [
+        { name: 'Baseline', values: [42, 45, 44, 47] },
+        { name: 'The quarter that went wrong', values: [40, 44, 19, 46] },
+        { name: 'Also baseline', values: [39, 41, 43, 44] },
+      ],
+      // Sparse on purpose: the two baselines have to keep following the page's
+      // palette while the middle one overrules it. The whole point of the
+      // option is lost if highlighting one series freezes the other two.
+      { colors: [null, '#d1373b'] }
+    ),
+  },
+  {
+    id: 'slices-colored',
+    breaks: 'colors keyed to slices rather than series, and legend agreement',
+    spec: {
+      version: 2,
+      type: 'donut',
+      title: 'Traffic by source',
+      description: 'Share of visits by source, with paid traffic picked out.',
+      data: {
+        source: 'inline',
+        labels: ['Organic', 'Direct', 'Paid', 'Referral'],
+        series: [{ name: 'Visits', values: [52, 21, 18, 9] }],
+      },
+      // A donut has one series and four colors, so an index here is a slice.
+      // If the legend and the ring ever disagree, this is where it shows.
+      options: { colors: [null, null, '#d1373b'] },
+    },
+  },
 ];
 
 /**

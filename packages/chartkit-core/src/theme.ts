@@ -45,6 +45,36 @@ export function seriesColor(index: number): string {
   return `var(--chart-series-${index + 1}, ${fallback})`;
 }
 
+/** Resolves the paint for one index of a chart. */
+export type Palette = (index: number) => string;
+
+/**
+ * The paint for a chart, honoring any colors the spec names.
+ *
+ * A color the spec sets is emitted literally rather than as the fallback of a
+ * `var()`, so it wins over the page's stylesheet. That is the opposite of the
+ * default and it is deliberate: the page's palette is a house style, and a
+ * chart that names a color is overruling the house style for a reason - one
+ * series highlighted, a red for the quarter that went wrong. A house style that
+ * could silently repaint it would make the option useless in exactly the case
+ * it exists for.
+ *
+ * An entry that is absent, `null` or empty falls through to {@link seriesColor}
+ * and stays themeable, so highlighting the second of five series costs
+ * `[null, '#c00']` rather than five hex codes.
+ *
+ * What an index means follows the chart: a series in a bar or line chart, a
+ * slice in a pie, and in both cases the same thing the legend is naming.
+ */
+export function createPalette(colors?: readonly (string | null)[]): Palette {
+  if (!colors?.length) return seriesColor;
+
+  return (index: number) => {
+    const color = colors[index];
+    return typeof color === 'string' && color.trim() ? color.trim() : seriesColor(index);
+  };
+}
+
 /**
  * Ink for axis lines, ticks and rules.
  *

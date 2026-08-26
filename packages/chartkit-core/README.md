@@ -137,6 +137,36 @@ are named by the legend.
 }
 ```
 
+### One chart that needs its own colors
+
+The stylesheet is the right home for a palette: it keeps every chart on brand,
+it survives a restyle, and nobody types a hex code into a CMS. It has nothing to
+say about the one chart that needs a single series picked out.
+
+`options.colors` is that escape hatch, and it is sparse - `null` or a missing
+entry leaves that index to the stylesheet:
+
+```ts
+options: {
+  // Second series red, everything else still follows --chart-series-N.
+  colors: [null, '#d1373b'],
+}
+```
+
+An index means whatever the legend is naming: a series in a bar, line or area
+chart, a slice in a pie or donut.
+
+A color set here is written into the markup literally rather than as a `var()`
+fallback, so it beats the page's stylesheet. That is deliberate and it is the
+opposite of the default: a chart naming a color is overruling the house style on
+purpose, and a house style that could silently repaint it would make the option
+useless in the one case it exists for.
+
+Values are CSS colors - hex, `rgb()`, `hsl()`, or a named color. Anything else
+is [reported as an issue](#errors-are-returned-not-drawn) rather than written
+into the markup: `url(https://…)` is a valid paint value that would make a chart
+fetch from a third party as it renders.
+
 ## Errors are returned, not drawn
 
 `renderChart` returns a result rather than throwing, and never renders a
