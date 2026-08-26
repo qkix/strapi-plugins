@@ -55,6 +55,34 @@ export function setCell(
   return { ...spec, data: { ...spec.data, series } };
 }
 
+/**
+ * Sets, or clears, the color at one index.
+ *
+ * The array is sparse by design - `null` at an index means "the page's palette
+ * decides this one" - so setting the third color pads the first two with
+ * `null` rather than inventing them. Trailing `null`s are trimmed and an array
+ * of nothing but holes is removed entirely, so clearing the last override
+ * leaves a spec identical to one that never had colors. Otherwise a chart
+ * someone experimented with would carry `[null, null, null]` forever, and every
+ * such spec would differ from the default while rendering the same.
+ *
+ * What an index means follows the chart type, the same as it does in the
+ * legend: a series in a bar or line chart, a slice in a pie.
+ */
+export function setColor(spec: ChartSpec, index: number, color: string | null): ChartSpec {
+  const colors = [...(spec.options?.colors ?? [])];
+
+  while (colors.length <= index) colors.push(null);
+  colors[index] = color;
+
+  while (colors.length > 0 && colors[colors.length - 1] == null) colors.pop();
+
+  const options = { ...spec.options, colors: colors.length > 0 ? colors : undefined };
+  if (options.colors === undefined) delete options.colors;
+
+  return { ...spec, options };
+}
+
 /** Renames a category. */
 export function setLabel(spec: ChartSpec, index: number, label: string): ChartSpec {
   const labels = spec.data.labels.map((l, i) => (i === index ? label : l));
