@@ -150,6 +150,11 @@ collapsed, so a one-word edit in a long article reads as one word rather than
 as the whole article with something green in it somewhere. Relations are
 reported as linked and unlinked, by name where the version has one.
 
+<img src="https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-rewind/docs/relations.png" alt="The What changed dialog showing the featured relation: plus Plugin showcase in green, minus Autumn release notes in red" width="760" />
+
+The name comes from the version, not from the target, so it still reads this way
+once the target has been deleted.
+
 Where a field's stored value changed but its readable text did not - a mark
 applied, blocks reordered - it says so, rather than showing an empty diff.
 
