@@ -143,6 +143,20 @@ an _indirect_ change to every package it touched and quietly downgraded to a
 patch. So `feat(rewind)` ships a feature as a patch and says nothing about it.
 Check a scope with `nx show projects --projects=<scope>` before relying on it.
 
+**And the scope that counts is the one in the pull request title.** `main` only
+takes squash merges, so however many commits a branch has, one commit lands -
+with the PR title as its subject. Splitting a branch into one commit per package
+looks tidy and changes nothing: the split is discarded on merge and every
+package but the one named in the title drops to an indirect patch.
+
+For a change that is a feature for more than one package, name them all. nx
+splits a scope on commas:
+
+    feat(chartkit-core,chartkit-editor,strapi-plugin-chartkit): per-chart colors
+
+Packages that merely depend on one of those get their patch automatically and do
+not belong in the list.
+
 Releases are cut with `nx release`: versions, tags and changelogs are per
 package, so a change to one does not bump the others. The release workflow is
 manual and defaults to a dry run. A `feat` is a minor and a `fix` is a patch,
