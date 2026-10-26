@@ -1,3 +1,13 @@
+## 0.23.10 (2026-10-26)
+
+### 🩹 Fixes
+
+- **strapi-plugin-better-blocks:** open the link popover when linking text mid-paragraph ([#181](https://github.com/qkix/strapi-plugins/pull/181))
+
+### ❤️ Thank You
+
+- Karla Iris Vergara Biggio @karlabiggio
+
 ## 0.23.9 (2026-08-26)
 
 This was a version bump only for @qkix/strapi-plugin-better-blocks to align it with other projects, there were no code changes.
