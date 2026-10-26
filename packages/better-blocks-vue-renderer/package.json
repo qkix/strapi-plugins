@@ -35,9 +35,9 @@
   },
   "dependencies": {
     "@qkix/better-blocks-core": "workspace:^",
-    "katex": "^0.16.11",
+    "katex": "^0.19.1",
     "mermaid": "^11.4.0",
-    "shiki": "^1.24.0"
+    "shiki": "^4.5.0"
   },
   "peerDependencies": {
     "@nuxt/kit": "^3.0.0 || ^4.0.0",

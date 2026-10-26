@@ -56,7 +56,7 @@
     "typecheck": "tsc -p admin/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^1.1.4"
+    "@dagrejs/dagre": "^3.1.3"
   },
   "devDependencies": {
     "@qkix/eslint-config": "workspace:*",

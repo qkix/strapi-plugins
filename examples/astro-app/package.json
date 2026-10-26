@@ -11,7 +11,7 @@
   "dependencies": {
     "@qkix/better-blocks-astro-renderer": "workspace:*",
     "astro": "^5.0.0",
-    "katex": "^0.16.11"
+    "katex": "^0.19.1"
   },
   "devDependencies": {
     "prettier-plugin-astro": "^0.14.1"

@@ -11,7 +11,7 @@
   "dependencies": {
     "@qkix/better-blocks-react-renderer": "workspace:*",
     "hls.js": "^1.7.3",
-    "katex": "^0.16.11",
+    "katex": "^0.19.1",
     "mermaid": "^11.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
