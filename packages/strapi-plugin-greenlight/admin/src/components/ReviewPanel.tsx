@@ -18,7 +18,7 @@ import {
 } from '@strapi/design-system';
 
 import { formatWhen, notifyReviewChanged, routes } from '../api';
-import type { AssignmentState, TransitionRow } from '../api';
+import type { AssignmentState, AssignmentsPage, TransitionRow } from '../api';
 import { documentIdOf } from '../editView';
 
 interface Reviewer {
@@ -293,9 +293,43 @@ const PanelContent = ({
 };
 
 /**
+ * Whether this content type is under any workflow, or `undefined` until the
+ * server answers.
+ *
+ * Asked per content type rather than per document, so it holds for an entry
+ * that has not been saved yet too. A failed request counts as "under review":
+ * hiding the review controls because of a network error is the worse mistake.
+ */
+export const useIsUnderReview = (model?: string): boolean | undefined => {
+  const { get } = useFetchClient();
+  const [underReview, setUnderReview] = React.useState<boolean | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (!model) return;
+    let cancelled = false;
+    setUnderReview(undefined);
+
+    get<AssignmentsPage>(routes.assignments(model))
+      .then(({ data }) => !cancelled && setUnderReview(Boolean(data.workflow)))
+      .catch(() => !cancelled && setUnderReview(true));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [get, model]);
+
+  return underReview;
+};
+
+/**
  * Three states that are easy to miss, and all three show up on day one:
  * a content type with no workflow (render nothing at all), a document that has
  * not been saved yet (nothing to attach a stage to), and everything else.
+ *
+ * Returning `null` is what removes the panel, title and all: the Content
+ * Manager renders each panel as a component and drops the ones that return
+ * nothing. It stays hidden while the answer is loading, so a content type with
+ * no workflow never flashes an empty review panel.
  *
  * "Not saved yet" is decided by `documentIdOf`, not by the `documentId` prop
  * alone: a single type's URL has no id in it, so the prop is always empty there.
@@ -306,7 +340,11 @@ export const ReviewPanel = (props: {
   document?: { documentId?: string; updatedAt?: string; locale?: string | null };
 }) => {
   const { model, document } = props;
+  const underReview = useIsUnderReview(model);
   const documentId = documentIdOf(props);
+
+  if (underReview !== true) return null;
+
   if (!documentId) {
     return {
       title: 'Review',
@@ -332,6 +370,3 @@ export const ReviewPanel = (props: {
     ),
   };
 };
-
-/** Used by the panel host to decide whether to render at all. */
-export const useIsUnderReview = () => undefined;
