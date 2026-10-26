@@ -3,6 +3,7 @@ import * as React from 'react';
 import { useFetchClient } from '@strapi/admin/strapi-admin';
 
 import { REVIEW_CHANGED } from '../api';
+import { documentIdOf } from '../editView';
 import { loadReviewState } from '../reviewBatch';
 import type { ReviewEntry } from '../reviewBatch';
 
@@ -79,7 +80,7 @@ export const withPublishGuard = (actions: any[]): any[] =>
       const description = action(props);
       const { known, publishable, stageName } = usePublishable(
         props?.model,
-        props?.documentId,
+        documentIdOf(props),
         props?.document?.locale
       );
 

@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { formatWhen, routes } from '../api';
 import type { QueueItem, Workflow } from '../api';
+import { editViewPath } from '../editView';
 
 /**
  * "My reviews".
@@ -141,12 +142,7 @@ export const QueuePage = () => {
               {items.map((item) => (
                 <Tr
                   key={item.id}
-                  onClick={() =>
-                    navigate(
-                      `/content-manager/collection-types/${item.contentTypeUid}/${item.documentId}` +
-                        (item.locale ? `?plugins[i18n][locale]=${item.locale}` : '')
-                    )
-                  }
+                  onClick={() => navigate(editViewPath(item))}
                   style={{ cursor: 'pointer' }}
                 >
                   <Td>

@@ -47,6 +47,7 @@ export interface QueueItem {
   documentId: string;
   contentTypeUid: string;
   contentTypeName: string;
+  contentTypeKind: 'collectionType' | 'singleType';
   locale: string | null;
   title: string;
   stage: { id: number; name: string; color: string } | null;

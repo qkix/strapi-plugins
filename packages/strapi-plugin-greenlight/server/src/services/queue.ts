@@ -9,6 +9,8 @@ export interface QueueItem {
   documentId: string;
   contentTypeUid: string;
   contentTypeName: string;
+  /** The edit view's URL differs by kind, and only the server knows the kind. */
+  contentTypeKind: 'collectionType' | 'singleType';
   locale: string | null;
   title: string;
   stage: Pick<Stage, 'id' | 'name' | 'color'> | null;
@@ -96,13 +98,14 @@ const queue = ({ strapi }: { strapi: Core.Strapi }) => {
       })) as Array<{ createdAt: string }>;
 
       const model = strapi.contentTypes[row.contentTypeUid as keyof typeof strapi.contentTypes] as
-        { info?: { displayName?: string } } | undefined;
+        { kind?: QueueItem['contentTypeKind']; info?: { displayName?: string } } | undefined;
 
       return {
         id: row.id,
         documentId: row.relatedDocumentId,
         contentTypeUid: row.contentTypeUid,
         contentTypeName: model?.info?.displayName ?? row.contentTypeUid,
+        contentTypeKind: model?.kind ?? 'collectionType',
         locale: denormalizeLocale(row.locale),
         title,
         stage: stage ? { id: stage.id, name: stage.name, color: stage.color } : null,

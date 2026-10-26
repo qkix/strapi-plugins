@@ -7,6 +7,8 @@ export const UID = 'api::article.article';
 /** No i18n, and no Draft & Publish - used for the rejection cases. */
 export const PLAIN_UID = 'api::note.note';
 export const NO_DP_UID = 'api::tag.tag';
+/** A single type: its edit view's URL has no document id in it. */
+export const SINGLE_UID = 'api::home-page.home-page';
 
 /**
  * Absolute, because the harness writes its fixture app to a temp directory and a
@@ -35,6 +37,12 @@ export const bootWithGreenlight = (
       tag: {
         info: { singularName: 'tag', pluralName: 'tags', displayName: 'Tag' },
         options: { draftAndPublish: false },
+        attributes: { title: { type: 'string' } },
+      },
+      'home-page': {
+        kind: 'singleType',
+        info: { singularName: 'home-page', pluralName: 'home-pages', displayName: 'Home page' },
+        options: { draftAndPublish: true },
         attributes: { title: { type: 'string' } },
       },
     },

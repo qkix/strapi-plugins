@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     // tests/ boots a real Strapi - see tooling/strapi-test-harness.
-    include: ['server/src/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: ['admin/src/**/*.test.ts', 'server/src/**/*.test.ts', 'tests/**/*.test.ts'],
     ...strapiTestOptions,
   },
 });

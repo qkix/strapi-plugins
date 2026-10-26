@@ -19,6 +19,7 @@ import {
 
 import { formatWhen, notifyReviewChanged, routes } from '../api';
 import type { AssignmentState, TransitionRow } from '../api';
+import { documentIdOf } from '../editView';
 
 interface Reviewer {
   id: number;
@@ -295,16 +296,17 @@ const PanelContent = ({
  * Three states that are easy to miss, and all three show up on day one:
  * a content type with no workflow (render nothing at all), a document that has
  * not been saved yet (nothing to attach a stage to), and everything else.
+ *
+ * "Not saved yet" is decided by `documentIdOf`, not by the `documentId` prop
+ * alone: a single type's URL has no id in it, so the prop is always empty there.
  */
-export const ReviewPanel = ({
-  model,
-  documentId,
-  document,
-}: {
+export const ReviewPanel = (props: {
   model: string;
   documentId?: string;
-  document?: { updatedAt?: string; locale?: string | null };
+  document?: { documentId?: string; updatedAt?: string; locale?: string | null };
 }) => {
+  const { model, document } = props;
+  const documentId = documentIdOf(props);
   if (!documentId) {
     return {
       title: 'Review',
