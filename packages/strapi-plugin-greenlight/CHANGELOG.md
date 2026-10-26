@@ -1,3 +1,13 @@
+## 0.1.7 (2026-10-26)
+
+### 🩹 Fixes
+
+- **better-blocks-astro-renderer,better-blocks-react-renderer,better-blocks-vue-renderer,strapi-plugin-better-blocks,strapi-plugin-blueprint:** update dependencies to their latest majors ([#190](https://github.com/qkix/strapi-plugins/pull/190))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.1.6 (2026-10-26)
 
 ### 🩹 Fixes
