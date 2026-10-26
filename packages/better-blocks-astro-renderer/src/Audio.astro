@@ -28,53 +28,51 @@ const alignment: AudioAlignment = node.alignment ?? 'center';
 const capId = caption ? `bb-audio-cap-${file.id ?? file.hash ?? index}` : undefined;
 ---
 
-{
-  AudioComp ? (
-    <AudioComp
-      file={file}
-      title={title}
-      caption={caption}
-      player={player}
-      alignment={node.alignment}
-    />
-  ) : (
-    <figure
-      class={`bb-audio align-${alignment}`}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-        margin: '1rem 0',
-        alignItems: AUDIO_ALIGN_ITEMS[alignment],
-      }}
+{AudioComp ? (
+  <AudioComp
+    file={file}
+    title={title}
+    caption={caption}
+    player={player}
+    alignment={node.alignment}
+  />
+) : (
+  <figure
+    class={`bb-audio align-${alignment}`}
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      margin: '1rem 0',
+      alignItems: AUDIO_ALIGN_ITEMS[alignment],
+    }}
+  >
+    {title && (
+      <figcaption class="bb-audio-title" style={{ fontWeight: 600 }}>
+        {title}
+      </figcaption>
+    )}
+    <audio
+      class="bb-audio-player"
+      src={file.url}
+      controls={player?.controls ?? true}
+      autoplay={player?.autoplay ?? false}
+      loop={player?.loop ?? false}
+      preload={player?.preload ?? 'metadata'}
+      aria-label={title || 'Audio player'}
+      aria-describedby={capId}
+      style={{ width: '100%', maxWidth: alignment === 'none' ? '100%' : '32rem' }}
     >
-      {title && (
-        <figcaption class="bb-audio-title" style={{ fontWeight: 600 }}>
-          {title}
-        </figcaption>
-      )}
-      <audio
-        class="bb-audio-player"
-        src={file.url}
-        controls={player?.controls ?? true}
-        autoplay={player?.autoplay ?? false}
-        loop={player?.loop ?? false}
-        preload={player?.preload ?? 'metadata'}
-        aria-label={title || 'Audio player'}
-        aria-describedby={capId}
-        style={{ width: '100%', maxWidth: alignment === 'none' ? '100%' : '32rem' }}
+      Your browser does not support the audio element. <a href={file.url}>Download the audio</a>.
+    </audio>
+    {caption && (
+      <figcaption
+        id={capId}
+        class="bb-audio-caption"
+        style={{ fontSize: '0.875rem', color: '#6b7280' }}
       >
-        Your browser does not support the audio element. <a href={file.url}>Download the audio</a>.
-      </audio>
-      {caption && (
-        <figcaption
-          id={capId}
-          class="bb-audio-caption"
-          style={{ fontSize: '0.875rem', color: '#6b7280' }}
-        >
-          {caption}
-        </figcaption>
-      )}
-    </figure>
-  )
-}
+        {caption}
+      </figcaption>
+    )}
+  </figure>
+)}

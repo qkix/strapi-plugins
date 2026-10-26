@@ -14,17 +14,15 @@ const QuoteComp = blocks?.quote as any;
 const style = getBlockStyle(node);
 ---
 
-{
-  QuoteComp ? (
-    <QuoteComp style={style}>
-      <Inline nodes={node.children} blocks={blocks} modifiers={modifiers} />
-    </QuoteComp>
-  ) : (
-    <blockquote class="bb-quote" style={style}>
-      <Inline nodes={node.children} blocks={blocks} modifiers={modifiers} />
-    </blockquote>
-  )
-}
+{QuoteComp ? (
+  <QuoteComp style={style}>
+    <Inline nodes={node.children} blocks={blocks} modifiers={modifiers} />
+  </QuoteComp>
+) : (
+  <blockquote class="bb-quote" style={style}>
+    <Inline nodes={node.children} blocks={blocks} modifiers={modifiers} />
+  </blockquote>
+)}
 
 <style>
   /* GitHub-style blockquote: a muted left border with indented, dimmed text.

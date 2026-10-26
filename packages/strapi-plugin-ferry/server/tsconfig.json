@@ -2,8 +2,10 @@
   "extends": "@strapi/typescript-utils/tsconfigs/server",
   "include": ["./src"],
   "compilerOptions": {
+    // Strapi's base server config still uses moduleResolution "Node" (node10),
+    // which TypeScript 6 deprecates. It is Strapi's to change; until then:
+    "ignoreDeprecations": "6.0",
     "rootDir": "../",
-    "baseUrl": ".",
     // Strapi's server preset declares ES2020, which predates `new Error(message,
     // { cause })`. The package requires Node 20 or above, where that has been
     // available for years, and the lint rules ask for a caught error to be

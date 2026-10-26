@@ -70,180 +70,157 @@ const HrComp = blocks?.['horizontal-line'] as any;
 const EmbedComp = blocks?.['media-embed'] as any;
 ---
 
-{
-  plugin && (
-    <Fragment>
-      {pluginContent === 'blocks' ? (
-        <PluginComp node={customBlock}>
-          {pluginChildren.map((child, childIndex) => (
-            <Astro.self
-              block={child as AnyBlockNode}
-              blocks={blocks}
-              modifiers={modifiers}
-              diagramTheme={diagramTheme}
-              clientMermaid={clientMermaid}
-              codeTheme={codeTheme}
-              codeCopyButton={codeCopyButton}
-              blockPlugins={blockPlugins}
-              index={childIndex}
-            />
-          ))}
-        </PluginComp>
-      ) : pluginContent === 'inline' ? (
-        <PluginComp node={customBlock}>
-          <Inline nodes={pluginChildren as InlineNode[]} blocks={blocks} modifiers={modifiers} />
-        </PluginComp>
+{plugin && (
+  <Fragment>
+    {pluginContent === 'blocks' ? (
+      <PluginComp node={customBlock}>
+        {pluginChildren.map((child, childIndex) => (
+          <Astro.self
+            block={child as AnyBlockNode}
+            blocks={blocks}
+            modifiers={modifiers}
+            diagramTheme={diagramTheme}
+            clientMermaid={clientMermaid}
+            codeTheme={codeTheme}
+            codeCopyButton={codeCopyButton}
+            blockPlugins={blockPlugins}
+            index={childIndex}
+          />
+        ))}
+      </PluginComp>
+    ) : pluginContent === 'inline' ? (
+      <PluginComp node={customBlock}>
+        <Inline nodes={pluginChildren as InlineNode[]} blocks={blocks} modifiers={modifiers} />
+      </PluginComp>
+    ) : (
+      <PluginComp node={customBlock} />
+    )}
+  </Fragment>
+)}
+
+{block.type === 'paragraph' && (
+  <Fragment>
+    {(() => {
+      const style = getBlockStyle(block);
+      return ParagraphComp ? (
+        <ParagraphComp style={style}>
+          <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
+        </ParagraphComp>
       ) : (
-        <PluginComp node={customBlock} />
-      )}
-    </Fragment>
-  )
-}
+        <p style={style}>
+          <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
+        </p>
+      );
+    })()}
+  </Fragment>
+)}
 
-{
-  block.type === 'paragraph' && (
-    <Fragment>
-      {(() => {
-        const style = getBlockStyle(block);
-        return ParagraphComp ? (
-          <ParagraphComp style={style}>
-            <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
-          </ParagraphComp>
-        ) : (
-          <p style={style}>
-            <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
-          </p>
-        );
-      })()}
-    </Fragment>
-  )
-}
-
-{
-  block.type === 'heading' && (
-    <Fragment>
-      {(() => {
-        const style = getBlockStyle(block);
-        const HeadingTag = `h${block.level}` as any;
-        return HeadingComp ? (
-          <HeadingComp level={block.level} style={style}>
-            <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
-          </HeadingComp>
-        ) : (
-          <HeadingTag style={style}>
-            <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
-          </HeadingTag>
-        );
-      })()}
-    </Fragment>
-  )
-}
+{block.type === 'heading' && (
+  <Fragment>
+    {(() => {
+      const style = getBlockStyle(block);
+      const HeadingTag = `h${block.level}` as any;
+      return HeadingComp ? (
+        <HeadingComp level={block.level} style={style}>
+          <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
+        </HeadingComp>
+      ) : (
+        <HeadingTag style={style}>
+          <Inline nodes={block.children} blocks={blocks} modifiers={modifiers} />
+        </HeadingTag>
+      );
+    })()}
+  </Fragment>
+)}
 
 {block.type === 'list' && <List node={block} blocks={blocks} modifiers={modifiers} />}
 
 {block.type === 'quote' && <Quote node={block} blocks={blocks} modifiers={modifiers} />}
 
-{
-  block.type === 'code' && (
-    <Code node={block} blocks={blocks} codeTheme={codeTheme} codeCopyButton={codeCopyButton} />
-  )
-}
+{block.type === 'code' && (
+  <Code node={block} blocks={blocks} codeTheme={codeTheme} codeCopyButton={codeCopyButton} />
+)}
 
-{
-  block.type === 'image' && (
-    <Fragment>
-      {(() => {
-        const align = block.imageAlign || 'center';
-        return ImageComp ? (
-          <ImageComp image={block.image} caption={block.caption} imageAlign={block.imageAlign} />
-        ) : (
-          <figure style={{ textAlign: align }}>
-            <img
-              src={block.image.url}
-              alt={block.image.alternativeText || ''}
-              width={block.image.width}
-              height={block.image.height}
-            />
-            {block.caption && <figcaption>{block.caption}</figcaption>}
-          </figure>
-        );
-      })()}
-    </Fragment>
-  )
-}
+{block.type === 'image' && (
+  <Fragment>
+    {(() => {
+      const align = block.imageAlign || 'center';
+      return ImageComp ? (
+        <ImageComp image={block.image} caption={block.caption} imageAlign={block.imageAlign} />
+      ) : (
+        <figure style={{ textAlign: align }}>
+          <img
+            src={block.image.url}
+            alt={block.image.alternativeText || ''}
+            width={block.image.width}
+            height={block.image.height}
+          />
+          {block.caption && <figcaption>{block.caption}</figcaption>}
+        </figure>
+      );
+    })()}
+  </Fragment>
+)}
 
 {block.type === 'horizontal-line' && <Fragment>{HrComp ? <HrComp /> : <hr />}</Fragment>}
 
 {block.type === 'table' && <Table node={block} blocks={blocks} modifiers={modifiers} />}
 
-{
-  block.type === 'media-embed' && (
-    <Fragment>
-      {EmbedComp ? (
-        <EmbedComp url={block.url} originalUrl={block.originalUrl} />
-      ) : (
-        <div style={{ position: 'relative', paddingBottom: '56.25%', height: '0' }}>
-          <iframe
-            src={block.url}
-            style={{
-              position: 'absolute',
-              top: '0',
-              left: '0',
-              width: '100%',
-              height: '100%',
-              border: '0',
-            }}
-            allowfullscreen
-            title="Embedded media"
-          />
-        </div>
-      )}
-    </Fragment>
-  )
-}
+{block.type === 'media-embed' && (
+  <Fragment>
+    {EmbedComp ? (
+      <EmbedComp url={block.url} originalUrl={block.originalUrl} />
+    ) : (
+      <div style={{ position: 'relative', paddingBottom: '56.25%', height: '0' }}>
+        <iframe
+          src={block.url}
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            border: '0',
+          }}
+          allowfullscreen
+          title="Embedded media"
+        />
+      </div>
+    )}
+  </Fragment>
+)}
 
 {block.type === 'math' && <Math node={block} blocks={blocks} />}
 
-{
-  block.type === 'diagram' && (
-    <Diagram
-      node={block}
-      blocks={blocks}
-      diagramTheme={diagramTheme}
-      clientMermaid={clientMermaid}
-    />
-  )
-}
+{block.type === 'diagram' && (
+  <Diagram node={block} blocks={blocks} diagramTheme={diagramTheme} clientMermaid={clientMermaid} />
+)}
 
-{
-  block.type === 'callout' && (
-    <Callout
-      node={block}
-      blocks={blocks}
-      modifiers={modifiers}
-      diagramTheme={diagramTheme}
-      clientMermaid={clientMermaid}
-      codeTheme={codeTheme}
-      codeCopyButton={codeCopyButton}
-      blockPlugins={blockPlugins}
-    />
-  )
-}
+{block.type === 'callout' && (
+  <Callout
+    node={block}
+    blocks={blocks}
+    modifiers={modifiers}
+    diagramTheme={diagramTheme}
+    clientMermaid={clientMermaid}
+    codeTheme={codeTheme}
+    codeCopyButton={codeCopyButton}
+    blockPlugins={blockPlugins}
+  />
+)}
 
-{
-  block.type === 'details' && (
-    <Details
-      node={block}
-      blocks={blocks}
-      modifiers={modifiers}
-      diagramTheme={diagramTheme}
-      clientMermaid={clientMermaid}
-      codeTheme={codeTheme}
-      codeCopyButton={codeCopyButton}
-      blockPlugins={blockPlugins}
-    />
-  )
-}
+{block.type === 'details' && (
+  <Details
+    node={block}
+    blocks={blocks}
+    modifiers={modifiers}
+    diagramTheme={diagramTheme}
+    clientMermaid={clientMermaid}
+    codeTheme={codeTheme}
+    codeCopyButton={codeCopyButton}
+    blockPlugins={blockPlugins}
+  />
+)}
 
 {block.type === 'button' && <Button node={block} blocks={blocks} />}
 

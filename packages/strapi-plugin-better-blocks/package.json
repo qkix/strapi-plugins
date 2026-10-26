@@ -63,19 +63,19 @@
   },
   "dependencies": {
     "@qkix/better-blocks-core": "workspace:^",
-    "katex": "^0.16.11",
+    "katex": "^0.19.1",
     "mermaid": "^11.15.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",
-    "shiki": "^4.3.0",
+    "shiki": "^4.5.0",
     "unified": "^11.0.5"
   },
   "devDependencies": {
     "@qkix/eslint-config": "workspace:*",
     "@qkix/strapi-test-harness": "workspace:*",
     "@qkix/tsconfig": "workspace:*",
-    "@strapi/sdk-plugin": "^5.3.2",
+    "@strapi/sdk-plugin": "^6.1.1",
     "@strapi/strapi": "^5.59.0",
     "@strapi/typescript-utils": "^5.59.0",
     "@types/katex": "^0.16.7",
@@ -88,8 +88,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.0",
     "styled-components": "^6.6.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "peerDependencies": {
     "@radix-ui/react-toolbar": "^1.0.0",

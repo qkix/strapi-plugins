@@ -81,5 +81,8 @@
         "push": false
       }
     }
+  },
+  "affected": {
+    "legacy": true
   }
 }

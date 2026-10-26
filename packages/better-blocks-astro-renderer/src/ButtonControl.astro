@@ -21,66 +21,64 @@ const size =
     : null;
 ---
 
-{
-  isFile && file ? (
-    filePreview ? (
-      /* Preview mode - open the file in a new tab instead of downloading. */
-      <a
-        href={file.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Preview ${file.name}`}
-        class={className}
-        style={style}
-      >
-        {icon && (
-          <span class="bb-button-icon" aria-hidden="true">
-            {icon}{' '}
-          </span>
-        )}
-        {node.label}
-        {size && <span class="bb-button-size"> ({size})</span>}
-      </a>
-    ) : (
-      /* Download mode - the `download` attribute handles same-origin assets; the
-         scoped script below force-downloads cross-origin ones (where `download`
-         is ignored and PDFs/videos/images would otherwise preview inline). */
-      <a
-        href={file.url}
-        download={file.name}
-        aria-label={`Download ${file.name}`}
-        class={className}
-        style={style}
-        data-bb-download
-        data-bb-download-name={file.name}
-      >
-        {icon && (
-          <span class="bb-button-icon" aria-hidden="true">
-            {icon}{' '}
-          </span>
-        )}
-        {node.label}
-        {size && <span class="bb-button-size"> ({size})</span>}
-      </a>
-    )
-  ) : node.link ? (
+{isFile && file ? (
+  filePreview ? (
+    /* Preview mode - open the file in a new tab instead of downloading. */
     <a
-      href={node.link.url}
-      target={node.link.target}
-      rel={node.link.rel}
-      aria-label={node.link.ariaLabel}
+      href={file.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Preview ${file.name}`}
       class={className}
       style={style}
     >
+      {icon && (
+        <span class="bb-button-icon" aria-hidden="true">
+          {icon}{' '}
+        </span>
+      )}
       {node.label}
+      {size && <span class="bb-button-size"> ({size})</span>}
     </a>
   ) : (
-    /* No link/file payload - render the label as a styled, non-navigating span. */
-    <span class={className} style={style}>
+    /* Download mode - the `download` attribute handles same-origin assets; the
+         scoped script below force-downloads cross-origin ones (where `download`
+         is ignored and PDFs/videos/images would otherwise preview inline). */
+    <a
+      href={file.url}
+      download={file.name}
+      aria-label={`Download ${file.name}`}
+      class={className}
+      style={style}
+      data-bb-download
+      data-bb-download-name={file.name}
+    >
+      {icon && (
+        <span class="bb-button-icon" aria-hidden="true">
+          {icon}{' '}
+        </span>
+      )}
       {node.label}
-    </span>
+      {size && <span class="bb-button-size"> ({size})</span>}
+    </a>
   )
-}
+) : node.link ? (
+  <a
+    href={node.link.url}
+    target={node.link.target}
+    rel={node.link.rel}
+    aria-label={node.link.ariaLabel}
+    class={className}
+    style={style}
+  >
+    {node.label}
+  </a>
+) : (
+  /* No link/file payload - render the label as a styled, non-navigating span. */
+  <span class={className} style={style}>
+    {node.label}
+  </span>
+)}
 
 <style>
   /* Smooth hover + visible keyboard focus, shipped by default (zero JS). Hover

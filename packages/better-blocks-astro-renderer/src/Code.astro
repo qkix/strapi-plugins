@@ -20,22 +20,20 @@ const plainText = getPlainText(node.children);
 const lang = normalizeCodeLang(node.language);
 ---
 
-{
-  CodeComp ? (
-    <CodeComp plainText={plainText} language={node.language}>
-      {plainText}
-    </CodeComp>
-  ) : (
-    <div class="bb-code">
-      <Code code={plainText} lang={lang as any} theme={codeTheme as any} />
-      {codeCopyButton && (
-        <button class="bb-code-copy" type="button" data-bb-code-copy aria-label="Copy code">
-          Copy
-        </button>
-      )}
-    </div>
-  )
-}
+{CodeComp ? (
+  <CodeComp plainText={plainText} language={node.language}>
+    {plainText}
+  </CodeComp>
+) : (
+  <div class="bb-code">
+    <Code code={plainText} lang={lang as any} theme={codeTheme as any} />
+    {codeCopyButton && (
+      <button class="bb-code-copy" type="button" data-bb-code-copy aria-label="Copy code">
+        Copy
+      </button>
+    )}
+  </div>
+)}
 
 {!CodeComp && codeCopyButton && <CodeCopyScript />}
 

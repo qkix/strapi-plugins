@@ -92,13 +92,11 @@ const res = await fetch('https://your-strapi.example.com/api/articles?status=pub
 const { data } = await res.json();
 ---
 
-{
-  data.map((article: { content: BlocksContent }) => (
-    <article>
-      <BlocksRenderer content={article.content} />
-    </article>
-  ))
-}
+{data.map((article: { content: BlocksContent }) => (
+  <article>
+    <BlocksRenderer content={article.content} />
+  </article>
+))}
 ```
 
 ### Math (KaTeX)
@@ -527,7 +525,9 @@ const { blocks } = Astro.props;
 const { backgroundColor } = Astro.props;
 ---
 
-<mark style={{ backgroundColor }}><slot /></mark>
+<mark style={{ backgroundColor }}>
+  <slot />
+</mark>
 ```
 
 The color/size/font modifiers receive a value prop (`color`, `backgroundColor`, `fontFamily`, `fontSize`); the rest receive only their `<slot />`.
@@ -563,7 +563,9 @@ is `inline` or `blocks`, its rendered children via the default `<slot />`:
 const { node } = Astro.props;
 ---
 
-<figure class="chart" data-title={node.spec.title}>{/* … */}</figure>
+<figure class="chart" data-title={node.spec.title}>
+  {/* … */}
+</figure>
 ```
 
 A registered block works at any depth, including inside a callout or a details.

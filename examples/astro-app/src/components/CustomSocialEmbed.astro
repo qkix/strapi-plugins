@@ -24,7 +24,9 @@ const emoji: Record<string, string> = {
     rel="noopener noreferrer"
     style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border: 1px solid #d0d7de; border-radius: 12px; text-decoration: none; color: inherit; text-align: left;"
   >
-    <span aria-hidden="true" style="font-size: 22px;">{emoji[platform] ?? '🔗'}</span>
+    <span aria-hidden="true" style="font-size: 22px;">
+      {emoji[platform] ?? '🔗'}
+    </span>
     <span style="display: flex; flex-direction: column;">
       <strong>{oembed?.author ?? provider}</strong>
       <span style="font-size: 13px; color: #57606a;">View on {provider} →</span>

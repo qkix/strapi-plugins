@@ -34,13 +34,13 @@
     "@qkix/better-blocks-core": "workspace:^",
     "@qkix/eslint-config": "workspace:*",
     "@qkix/tsconfig": "workspace:*",
-    "astro": "^5.0.0",
+    "astro": "^7.4.2",
     "eslint": "^10.13.0",
     "linkedom": "^0.18.14",
     "prettier": "^3.9.10",
-    "prettier-plugin-astro": "^0.14.1",
-    "typescript": "^5.7.2",
-    "vitest": "^3.0.0"
+    "prettier-plugin-astro": "^1.1.2",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "peerDependencies": {
     "astro": ">=4.0.0",
