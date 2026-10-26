@@ -1,3 +1,13 @@
+## 0.1.5 (2026-10-26)
+
+### 🩹 Fixes
+
+- **strapi-plugin-greenlight:** find the document on single types ([#183](https://github.com/qkix/strapi-plugins/pull/183))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.1.4 (2026-08-26)
 
 This was a version bump only for @qkix/strapi-plugin-greenlight to align it with other projects, there were no code changes.
