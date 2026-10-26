@@ -1,3 +1,7 @@
+## 0.4.1 (2026-10-26)
+
+This was a version bump only for @qkix/chartkit-core to align it with other projects, there were no code changes.
+
 ## 0.4.0 (2026-08-26)
 
 ### 🚀 Features

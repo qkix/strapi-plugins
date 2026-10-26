@@ -1,3 +1,13 @@
+## 0.3.1 (2026-10-26)
+
+### 🩹 Fixes
+
+- **strapi-plugin-better-blocks,chartkit-editor:** accept any slate patch release as a peer ([#184](https://github.com/qkix/strapi-plugins/pull/184))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.3.0 (2026-08-26)
 
 ### 🚀 Features
