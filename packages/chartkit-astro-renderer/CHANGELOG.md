@@ -1,3 +1,13 @@
+## 0.2.10 (2026-10-26)
+
+### 🩹 Fixes
+
+- **better-blocks-astro-renderer,better-blocks-react-renderer,better-blocks-vue-renderer,strapi-plugin-better-blocks,strapi-plugin-blueprint:** update dependencies to their latest majors ([#190](https://github.com/qkix/strapi-plugins/pull/190))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.2.9 (2026-10-26)
 
 This was a version bump only for @qkix/chartkit-astro-renderer to align it with other projects, there were no code changes.
