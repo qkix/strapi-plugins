@@ -676,13 +676,13 @@ importers:
         specifier: ^4.3.0
         version: 4.4.3
       slate:
-        specifier: 0.94.1
+        specifier: ^0.94.1
         version: 0.94.1
       slate-history:
-        specifier: 0.93.0
+        specifier: ^0.93.0
         version: 0.93.0(slate@0.94.1)
       slate-react:
-        specifier: 0.98.3
+        specifier: ^0.98.3
         version: 0.98.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(slate@0.94.1)
       unified:
         specifier: ^11.0.5
@@ -3426,6 +3426,7 @@ packages:
 
   '@mux/mux-node@12.8.1':
     resolution: {integrity: sha512-ey2eKn7iwVrjRVJfB/yF9HPDVpEl+fZV00ydx0kc9/BMs+wjBi0KgU0HMqUjTgEoyMUTlHmJ3U3BfDvreyg5iQ==}
+    deprecated: '@mux/mux-node was renamed to @mux/ts. 15.5.0 is the final release under this name; install @mux/ts for all future releases. Migration guide: https://github.com/muxinc/mux-ts/blob/main/MIGRATION.md'
 
   '@mux/mux-player-react@3.1.0':
     resolution: {integrity: sha512-oJWcRtDNE84KKSi/5tz7CKGHBLA34V9XlLnv30qqVMAvfifa3S0lY82gP41YA0OfYANwp5Sg29bbh3quekusPg==}
