@@ -17,19 +17,17 @@ const {
 const isValid = Array.isArray(content) && content.length > 0;
 ---
 
-{
-  isValid &&
-    content.map((block, index) => (
-      <Block
-        block={block}
-        blocks={blocks}
-        modifiers={modifiers}
-        diagramTheme={diagramTheme}
-        clientMermaid={clientMermaid}
-        codeTheme={codeTheme}
-        codeCopyButton={codeCopyButton}
-        blockPlugins={blockPlugins}
-        index={index}
-      />
-    ))
-}
+{isValid &&
+  content.map((block, index) => (
+    <Block
+      block={block}
+      blocks={blocks}
+      modifiers={modifiers}
+      diagramTheme={diagramTheme}
+      clientMermaid={clientMermaid}
+      codeTheme={codeTheme}
+      codeCopyButton={codeCopyButton}
+      blockPlugins={blockPlugins}
+      index={index}
+    />
+  ))}

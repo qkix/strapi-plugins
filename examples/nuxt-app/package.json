@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@qkix/better-blocks-vue-renderer": "workspace:*",
-    "nuxt": "^3.15.0",
+    "nuxt": "^4.6.2",
     "vue": "^3.5.44"
   },
   "nx": {

@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@qkix/better-blocks-astro-renderer": "workspace:*",
-    "astro": "^5.0.0",
+    "astro": "^7.4.2",
     "katex": "^0.19.1"
   },
   "devDependencies": {
-    "prettier-plugin-astro": "^0.14.1"
+    "prettier-plugin-astro": "^1.1.2"
   },
   "description": "Astro app rendering the seeded Strapi content with @qkix/better-blocks-astro-renderer",
   "nx": {

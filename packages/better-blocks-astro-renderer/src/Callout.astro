@@ -62,9 +62,31 @@ const title = node.title?.trim() ? node.title : meta.label;
 const CalloutComp = blocks?.callout as any;
 ---
 
-{
-  CalloutComp ? (
-    <CalloutComp variant={variant} title={node.title}>
+{CalloutComp ? (
+  <CalloutComp variant={variant} title={node.title}>
+    {node.children.map((child, index) => (
+      <Block
+        block={child}
+        blocks={blocks}
+        modifiers={modifiers}
+        diagramTheme={diagramTheme}
+        clientMermaid={clientMermaid}
+        codeTheme={codeTheme}
+        codeCopyButton={codeCopyButton}
+        blockPlugins={blockPlugins}
+        index={index}
+      />
+    ))}
+  </CalloutComp>
+) : (
+  <aside class={`bb-callout bb-callout-${variant}`} role="note">
+    <p class="bb-callout-title">
+      <svg class="bb-callout-icon" viewBox="0 0 16 16" aria-hidden="true">
+        <path d={meta.icon} />
+      </svg>
+      {title}
+    </p>
+    <div class="bb-callout-body">
       {node.children.map((child, index) => (
         <Block
           block={child}
@@ -78,33 +100,9 @@ const CalloutComp = blocks?.callout as any;
           index={index}
         />
       ))}
-    </CalloutComp>
-  ) : (
-    <aside class={`bb-callout bb-callout-${variant}`} role="note">
-      <p class="bb-callout-title">
-        <svg class="bb-callout-icon" viewBox="0 0 16 16" aria-hidden="true">
-          <path d={meta.icon} />
-        </svg>
-        {title}
-      </p>
-      <div class="bb-callout-body">
-        {node.children.map((child, index) => (
-          <Block
-            block={child}
-            blocks={blocks}
-            modifiers={modifiers}
-            diagramTheme={diagramTheme}
-            clientMermaid={clientMermaid}
-            codeTheme={codeTheme}
-            codeCopyButton={codeCopyButton}
-            blockPlugins={blockPlugins}
-            index={index}
-          />
-        ))}
-      </div>
-    </aside>
-  )
-}
+    </div>
+  </aside>
+)}
 
 <style>
   .bb-callout {

@@ -37,13 +37,11 @@ const Tag = Wrapper as any;
 ---
 
 <Tag {...wrapperProps}>
-  {
-    node.children.map((child) =>
-      child.type === 'list-item' ? (
-        <ListItem node={child} isTodo={isTodo} blocks={blocks} modifiers={modifiers} />
-      ) : (
-        <Astro.self node={child} blocks={blocks} modifiers={modifiers} />
-      )
+  {node.children.map((child) =>
+    child.type === 'list-item' ? (
+      <ListItem node={child} isTodo={isTodo} blocks={blocks} modifiers={modifiers} />
+    ) : (
+      <Astro.self node={child} blocks={blocks} modifiers={modifiers} />
     )
-  }
+  )}
 </Tag>

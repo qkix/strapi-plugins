@@ -27,8 +27,6 @@ const result = renderChart(spec, { locale, idPrefix });
 const svg = result.ok ? result.svg : '';
 ---
 
-{
-  /* The markup is this library's own output, from a builder that escapes every
-     author-controlled value on the way in - see chartkit-core's svg.ts. */
-}
+{/* The markup is this library's own output, from a builder that escapes every
+     author-controlled value on the way in - see chartkit-core's svg.ts. */}
 {svg && <div class={className} set:html={svg} />}

@@ -67,17 +67,15 @@ const clientSource = clientMermaid ? applyDiagramTheme(source, diagramTheme) : s
 const Custom = DiagramComp as any;
 ---
 
-{
-  Custom ? (
-    <Custom code={source} format={format} />
-  ) : clientMermaid ? (
-    <>
-      <pre class="mermaid-source" data-bb-mermaid set:text={clientSource} />
-      <MermaidScript />
-    </>
-  ) : svg !== null ? (
-    <div class="mermaid-diagram" set:html={svg} />
-  ) : (
-    <pre class="mermaid-source">{source}</pre>
-  )
-}
+{Custom ? (
+  <Custom code={source} format={format} />
+) : clientMermaid ? (
+  <>
+    <pre class="mermaid-source" data-bb-mermaid set:text={clientSource} />
+    <MermaidScript />
+  </>
+) : svg !== null ? (
+  <div class="mermaid-diagram" set:html={svg} />
+) : (
+  <pre class="mermaid-source">{source}</pre>
+)}

@@ -33,9 +33,26 @@ const {
 const DetailsComp = blocks?.details as any;
 ---
 
-{
-  DetailsComp ? (
-    <DetailsComp summary={node.summary} defaultOpen={node.defaultOpen}>
+{DetailsComp ? (
+  <DetailsComp summary={node.summary} defaultOpen={node.defaultOpen}>
+    {node.children.map((child, index) => (
+      <Block
+        block={child}
+        blocks={blocks}
+        modifiers={modifiers}
+        diagramTheme={diagramTheme}
+        clientMermaid={clientMermaid}
+        codeTheme={codeTheme}
+        codeCopyButton={codeCopyButton}
+        blockPlugins={blockPlugins}
+        index={index}
+      />
+    ))}
+  </DetailsComp>
+) : (
+  <details class="bb-details" open={node.defaultOpen}>
+    <summary class="bb-details-summary">{node.summary}</summary>
+    <div class="bb-details-body">
       {node.children.map((child, index) => (
         <Block
           block={child}
@@ -49,28 +66,9 @@ const DetailsComp = blocks?.details as any;
           index={index}
         />
       ))}
-    </DetailsComp>
-  ) : (
-    <details class="bb-details" open={node.defaultOpen}>
-      <summary class="bb-details-summary">{node.summary}</summary>
-      <div class="bb-details-body">
-        {node.children.map((child, index) => (
-          <Block
-            block={child}
-            blocks={blocks}
-            modifiers={modifiers}
-            diagramTheme={diagramTheme}
-            clientMermaid={clientMermaid}
-            codeTheme={codeTheme}
-            codeCopyButton={codeCopyButton}
-            blockPlugins={blockPlugins}
-            index={index}
-          />
-        ))}
-      </div>
-    </details>
-  )
-}
+    </div>
+  </details>
+)}
 
 <style>
   /* GitHub-inspired collapsible. Zero client-side JavaScript - the open/closed

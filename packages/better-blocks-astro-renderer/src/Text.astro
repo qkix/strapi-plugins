@@ -34,12 +34,10 @@ if (hasMarks) {
 const Wrapper = Tag as any;
 ---
 
-{
-  hasMarks ? (
-    <Wrapper {...tagProps}>
-      <Astro.self node={node} modifiers={modifiers} marks={rest} />
-    </Wrapper>
-  ) : (
-    node.text
-  )
-}
+{hasMarks ? (
+  <Wrapper {...tagProps}>
+    <Astro.self node={node} modifiers={modifiers} marks={rest} />
+  </Wrapper>
+) : (
+  node.text
+)}

@@ -31,12 +31,10 @@ const Wrapper = Tag as any;
 const Custom = MathComp as any;
 ---
 
-{
-  Custom ? (
-    <Custom formula={formula} inline={!isBlock} />
-  ) : html !== null ? (
-    <Wrapper class={className} set:html={html} />
-  ) : (
-    <Wrapper class={className}>{formula}</Wrapper>
-  )
-}
+{Custom ? (
+  <Custom formula={formula} inline={!isBlock} />
+) : html !== null ? (
+  <Wrapper class={className} set:html={html} />
+) : (
+  <Wrapper class={className}>{formula}</Wrapper>
+)}

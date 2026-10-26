@@ -3,4 +3,6 @@ const { level, style } = Astro.props;
 const Tag = `h${level}` as any;
 ---
 
-<Tag data-testid={`heading-${level}`} style={style}><slot /></Tag>
+<Tag data-testid={`heading-${level}`} style={style}>
+  <slot />
+</Tag>

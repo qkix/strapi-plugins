@@ -40,11 +40,11 @@
     "@qkix/eslint-config": "workspace:*",
     "@qkix/tsconfig": "workspace:*",
     "@types/katex": "^0.16.7",
-    "astro": "^5.0.0",
+    "astro": "^7.4.2",
     "eslint": "^10.13.0",
     "linkedom": "^0.18.14",
     "prettier": "^3.9.10",
-    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-astro": "^1.1.2",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
