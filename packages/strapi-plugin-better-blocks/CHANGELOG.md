@@ -6,7 +6,6 @@
 
 ### ❤️ Thank You
 
-- Claude Opus 5.5
 - Karla Iris Vergara Biggio @karlabiggio
 
 ## 0.23.9 (2026-08-26)
