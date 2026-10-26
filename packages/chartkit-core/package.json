@@ -48,9 +48,9 @@
     "d3-shape": "^3.2.0",
     "@types/d3-array": "^3.2.1",
     "@types/d3-scale": "^4.0.8",
-    "@types/d3-shape": "^3.1.6",
-    "eslint": "^10.8.1",
-    "prettier": "^3.4.2",
+    "@types/d3-shape": "^3.2.0",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

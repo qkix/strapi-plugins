@@ -25,15 +25,15 @@
     "@qkix/strapi-plugin-ferry": "workspace:*",
     "@qkix/strapi-plugin-greenlight": "workspace:*",
     "@qkix/strapi-plugin-rewind": "workspace:*",
-    "@strapi/plugin-cloud": "5.52.0",
-    "@strapi/plugin-users-permissions": "5.52.0",
-    "@strapi/strapi": "5.52.0",
+    "@strapi/plugin-cloud": "5.59.0",
+    "@strapi/plugin-users-permissions": "5.59.0",
+    "@strapi/strapi": "5.59.0",
     "better-sqlite3": "12.6.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
-    "strapi-plugin-mux-video-uploader": "^3.0.2",
-    "styled-components": "^6.0.0"
+    "strapi-plugin-mux-video-uploader": "^3.2.0",
+    "styled-components": "^6.6.0"
   },
   "devDependencies": {
     "@types/node": "^20",

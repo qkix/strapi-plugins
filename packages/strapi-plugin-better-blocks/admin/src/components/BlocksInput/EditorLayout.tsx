@@ -117,8 +117,8 @@ const InputWrapper = styled<FlexComponent>(Flex)<{
       border: 1px solid
         ${$hasError ? theme.colors.danger600 : theme.colors.primary600};
       box-shadow: ${
-        $hasError ? theme.colors.danger600 : theme.colors.primary600
-      }
+          $hasError ? theme.colors.danger600 : theme.colors.primary600
+        }
         0px 0px 0px 2px;
     }
   `}
