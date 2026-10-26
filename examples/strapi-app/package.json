@@ -39,7 +39,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "typescript": "^5"
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=20.0.0 <=24.x.x",
