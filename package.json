@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^16.3.3",
+    "lint-staged": "^17.6.0",
     "nx": "24.0.2",
     "prettier": "^3.9.10",
     "react": "^19.2.0",
@@ -33,7 +33,7 @@
     "*.{js,jsx,ts,tsx,mjs,cjs,json,md,yml,yaml,css,astro,vue}": "prettier --write"
   },
   "engines": {
-    "node": ">=20.0.0 <23.0.0"
+    "node": ">=22.12.0 <25.0.0"
   },
   "packageManager": "pnpm@10.18.0"
 }

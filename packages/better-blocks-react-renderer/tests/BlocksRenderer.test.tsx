@@ -1243,7 +1243,9 @@ describe('BlocksRenderer', () => {
       },
     ];
     render(<BlocksRenderer content={content} />);
-    expect(screen.getByText('Indented').closest('p')).toHaveStyle({ marginLeft: '4rem' });
+    // The inline style, not toHaveStyle: jsdom computes rem to px like a browser,
+    // and what the renderer promises is the rem it writes.
+    expect(screen.getByText('Indented').closest('p')?.style.marginLeft).toBe('4rem');
   });
 
   it('renders block with combined textAlign, lineHeight, and indent', () => {
@@ -1258,7 +1260,8 @@ describe('BlocksRenderer', () => {
     ];
     render(<BlocksRenderer content={content} />);
     const p = screen.getByText('Combined').closest('p');
-    expect(p).toHaveStyle({ textAlign: 'center', lineHeight: '1.5', marginLeft: '2rem' });
+    expect(p).toHaveStyle({ textAlign: 'center', lineHeight: '1.5' });
+    expect(p?.style.marginLeft).toBe('2rem');
   });
 
   it('does not apply lineHeight or indent when not set', () => {
@@ -1571,7 +1574,8 @@ describe('BlocksRenderer', () => {
     expect(aside).toBeInTheDocument();
     expect(aside).toHaveAttribute('role', 'note');
     // Accent border and matching tinted background (~8% opacity of the accent color)
-    expect(aside).toHaveStyle({ borderLeft: '0.25rem solid #9a6700' });
+    expect((aside as HTMLElement).style.borderLeftWidth).toBe('0.25rem');
+    expect(aside).toHaveStyle({ borderLeftStyle: 'solid', borderLeftColor: '#9a6700' });
     expect(aside).toHaveStyle({ backgroundColor: '#9a670014' });
     // Default title falls back to the variant label, and the icon is present
     expect(aside?.querySelector('.bb-callout-title')?.textContent).toBe('Warning');

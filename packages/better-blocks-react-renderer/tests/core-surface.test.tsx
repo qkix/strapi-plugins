@@ -122,11 +122,10 @@ describe('block style attributes', () => {
       } as BlocksContent[number],
     ];
     const { container } = render(<BlocksRenderer content={content} />);
-    expect(container.querySelector('p')).toHaveStyle({
-      textAlign: 'right',
-      lineHeight: '2',
-      marginLeft: '2rem',
-    });
+    const p = container.querySelector('p');
+    expect(p).toHaveStyle({ textAlign: 'right', lineHeight: '2' });
+    // Inline, because jsdom computes rem to px like a browser.
+    expect(p?.style.marginLeft).toBe('2rem');
   });
 
   it('sets no style when no attribute is present', () => {

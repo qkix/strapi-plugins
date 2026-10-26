@@ -29,8 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # @strapi/sdk-plugin refuses Node 23+, so the matrix stops at 22.
-        node-version: [20, 22]
+        # The build and test tooling (vitest 5, tsup 9, jsdom 30) needs Node 22.12+.
+        # This is the repo's own toolchain only: the published packages still
+        # declare engines >=20, since nothing they run needs Node 22.
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v4
