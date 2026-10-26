@@ -44,6 +44,14 @@ const withLinks = (editor: BaseEditor) => {
       linkEditor.shouldSaveLinkPath
     ) {
       linkEditor.lastInsertedLinkPath = operation.path;
+    } else if (linkEditor.lastInsertedLinkPath) {
+      // wrapNodes inserts the link after the selection and then moves the
+      // selected text into it, which shifts the link back; follow it so the
+      // popover still finds its own path.
+      linkEditor.lastInsertedLinkPath = Path.transform(
+        linkEditor.lastInsertedLinkPath,
+        operation
+      );
     }
 
     apply(operation);
