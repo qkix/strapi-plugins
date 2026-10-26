@@ -81,6 +81,8 @@ Only content types with **Draft & Publish** can be added. Without it there is no
 action to refuse, so a gate would be decorative; the settings page filters them out and
 the API rejects them with an explanation rather than failing later.
 
+Collection types and single types are both supported, with the same panel, gate and queue.
+
 ## How a document moves
 
 <p align="center">
