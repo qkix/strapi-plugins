@@ -186,10 +186,8 @@ try {
                   ⑨ clientMermaid - the same diagrams rendered by mermaid.js
                 </h2>
                 <p style="color: #666; font-size: 14px; margin-top: 0;">
-                  Above, diagrams are SVG built on the server: no JavaScript ships, but the
-                  server-side engine reimplements mermaid's layout and disagrees with it - a
-                  flowchart with a cycle comes out in the wrong order, and a sequence diagram loses
-                  the closing actor row. Below, the same blocks with
+                  Above, diagrams are SVG built on the server by Pele: no JavaScript ships, and the
+                  layout is Pele's own rather than mermaid's. Below, the same blocks with
                   <code>clientMermaid</code>: mermaid.js renders them in the browser, so they match
                   mermaid exactly, at the cost of the zero-JS default.
                 </p>

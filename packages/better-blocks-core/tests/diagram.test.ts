@@ -5,6 +5,7 @@ import {
   applyDiagramTheme,
   resolveDiagramColors,
   toMermaidThemeVariables,
+  toPeleThemeVariables,
 } from '../src/diagram';
 
 const SOURCE = 'graph TD\n  A[Start] --> B[End]';
@@ -109,5 +110,62 @@ describe('applyDiagramTheme', () => {
       expect(init, `theme ${name}`).not.toBeNull();
       expect(Object.keys(init!.themeVariables).length, `theme ${name}`).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('toPeleThemeVariables', () => {
+  it('passes the colors a palette sets straight through', () => {
+    const vars = toPeleThemeVariables({
+      bg: '#ffffff',
+      fg: '#333333',
+      line: '#444444',
+      accent: '#9370db',
+      muted: '#666666',
+      surface: '#ececff',
+      border: '#9370db',
+      font: 'Inter',
+    });
+    expect(vars).toMatchObject({
+      '--pele-bg': '#ffffff',
+      '--pele-fg': '#333333',
+      '--pele-line': '#444444',
+      '--pele-accent': '#9370db',
+      '--pele-muted': '#666666',
+      '--pele-surface': '#ececff',
+      '--pele-border': '#9370db',
+      '--pele-font': 'Inter',
+    });
+  });
+
+  it('mixes node fills from bg/fg when a palette only sets those', () => {
+    // Pele derives nothing itself: without these a dark bg/fg-only palette
+    // leaves nodes on its light default fill, with light text on top.
+    const vars = toPeleThemeVariables(DIAGRAM_THEMES['zinc-dark']);
+    expect(vars['--pele-surface']).toBe('color-mix(in srgb, #FAFAFA 6%, #18181B)');
+    expect(vars['--pele-surface-alt']).toBe('color-mix(in srgb, #FAFAFA 12%, #18181B)');
+    expect(vars['--pele-border']).toBe('color-mix(in srgb, #FAFAFA 45%, #18181B)');
+    expect(vars['--pele-muted']).toBe('color-mix(in srgb, #FAFAFA 60%, #18181B)');
+    expect(vars['--pele-line']).toBe('#FAFAFA');
+  });
+
+  it('falls back to the accent for lines and borders, like the mermaid mapping', () => {
+    const vars = toPeleThemeVariables({ bg: '#fff', fg: '#222', accent: '#ff0000' });
+    expect(vars['--pele-line']).toBe('#ff0000');
+    expect(vars['--pele-border']).toBe('#ff0000');
+  });
+
+  it('makes the background transparent when asked, over bg', () => {
+    const vars = toPeleThemeVariables({ bg: '#000000', fg: '#ffffff', transparent: true });
+    expect(vars['--pele-bg']).toBe('transparent');
+    // bg still seeds the mixed fills.
+    expect(vars['--pele-surface']).toContain('#000000');
+  });
+
+  it('emits nothing it cannot derive', () => {
+    expect(toPeleThemeVariables({})).toEqual({});
+    expect(toPeleThemeVariables({ fg: '#222' })).toEqual({
+      '--pele-fg': '#222',
+      '--pele-line': '#222',
+    });
   });
 });

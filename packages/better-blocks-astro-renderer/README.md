@@ -115,11 +115,13 @@ import 'katex/dist/katex.min.css';
 
 ### Diagrams (Mermaid)
 
-[Mermaid](https://mermaid.js.org/) diagram blocks (`{ type: 'diagram', format: 'mermaid' }`) are **pre-rendered to inline SVG on the server** using [`beautiful-mermaid`](https://www.npmjs.com/package/beautiful-mermaid) - a pure-Node renderer that needs **no headless browser** (no Puppeteer, no Chromium download). Like math, rendering happens during SSR and static builds with **zero client-side JavaScript** and no hydration step.
+[Mermaid](https://mermaid.js.org/) diagram blocks (`{ type: 'diagram', format: 'mermaid' }`) are **pre-rendered to inline SVG on the server** using [Pele](https://pele.run) - a pure-TypeScript Mermaid renderer that needs **no headless browser** (no Puppeteer, no Chromium download). Like math, rendering happens during SSR and static builds with **zero client-side JavaScript** and no hydration step.
 
-Supported diagram types - **flowchart, sequence, state, class, ER, and xychart** - render to a `<div class="mermaid-diagram">` wrapping the generated SVG. Diagram types `beautiful-mermaid` does not implement yet (gantt, pie, mindmap, gitGraph, …) and any source that fails to parse fall back gracefully to the raw definition in a `<pre class="mermaid-source">`, so content is never lost.
+Every diagram type built into Mermaid renders (flowchart, sequence, state, class, ER, gantt, pie, mindmap, gitGraph, xychart, …) to a `<div class="mermaid-diagram">` wrapping the generated SVG. A source that fails to parse falls back gracefully to the raw definition in a `<pre class="mermaid-source">`, so content is never lost.
 
-`beautiful-mermaid` ships as a dependency of this package, so no extra install or stylesheet is required.
+Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it. If you need mermaid.js's exact output, see [`clientMermaid`](#rendering-with-mermaidjs-instead-clientmermaid).
+
+`pele` ships as a dependency of this package, so no extra install or stylesheet is required.
 
 #### Diagram colors
 
@@ -138,13 +140,11 @@ const { blocks } = Astro.props;
 <BlocksRenderer content={blocks} diagramTheme={{ bg: '#fff', fg: '#1f2328', accent: '#8250df' }} />
 ```
 
-> `beautiful-mermaid` derives a clean, single-accent palette from these colors - it is intentionally minimal, not a 1:1 clone of mermaid.js's multi-color default theme.
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. You can also override any [Pele variable](https://pele.run/theming) from your own CSS.
 
 #### Rendering with mermaid.js instead (`clientMermaid`)
 
-`beautiful-mermaid` is a reimplementation of mermaid's layout rather than mermaid itself, and it disagrees with the real thing on some diagrams: **flowcharts containing a cycle come out in the wrong order**, and **sequence diagrams omit the closing actor row** mermaid draws at the foot of the lifelines. Diagram types it does not implement (gantt, pie, mindmap, gitGraph, …) never render at all.
-
-Set `clientMermaid` to render diagrams with mermaid.js in the browser instead:
+Set `clientMermaid` to render diagrams with mermaid.js in the browser instead, for mermaid's own layout and look:
 
 ```astro
 <BlocksRenderer content={blocks} clientMermaid />
@@ -152,11 +152,13 @@ Set `clientMermaid` to render diagrams with mermaid.js in the browser instead:
 
 The server then emits the raw definition in a `<pre class="mermaid-source" data-bb-mermaid>` and a small module script swaps in a `<div class="mermaid-diagram">` after load. mermaid is imported dynamically, so it is only fetched on pages that actually contain a diagram, and the `<pre>` stays put if it fails to load or the source fails to parse.
 
-This is **off by default on purpose**: the whole point of the server-rendered SVG is that a page stays zero-JS, and the trade is real - with `clientMermaid` a diagram is raw text until JavaScript runs, which is what crawlers and no-JS readers see. Turn it on when diagram fidelity matters more than that. `diagramTheme` works in both modes; in client mode it travels with the source as a [`%%{init}%%` directive](https://mermaid.js.org/config/directives.html), and a diagram whose source already begins with one keeps the author's.
+This is **off by default on purpose**: the whole point of the server-rendered SVG is that a page stays zero-JS, and the trade is real - with `clientMermaid` a diagram is raw text until JavaScript runs, which is what crawlers and no-JS readers see. Turn it on when matching mermaid.js exactly matters more than that. `diagramTheme` works in both modes; in client mode it travels with the source as a [`%%{init}%%` directive](https://mermaid.js.org/config/directives.html), and a diagram whose source already begins with one keeps the author's.
 
 `mermaid` ships as a dependency of this package, so there is nothing extra to install either way.
 
 > To take full control of the markup, override the `diagram` block via `blocks.diagram` - it wins over `clientMermaid`.
+
+> Before 0.16, diagrams were server-rendered with `beautiful-mermaid`, a reimplementation of mermaid's layout that drew flowcharts containing a cycle in the wrong order, omitted the closing actor row of sequence diagrams, and fell back to the `<pre>` for gantt, pie, mindmap and gitGraph. Pele renders all of those correctly. Diagrams now look slightly different; the `diagramTheme` values and the `mermaid-diagram` / `mermaid-source` class names are unchanged.
 
 ### Callouts (Admonitions)
 

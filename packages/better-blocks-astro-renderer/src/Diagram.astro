@@ -1,6 +1,10 @@
 ---
-import { applyDiagramTheme } from '@qkix/better-blocks-core';
-import { renderMermaidSVG, THEMES } from 'beautiful-mermaid';
+import {
+  applyDiagramTheme,
+  resolveDiagramColors,
+  toPeleThemeVariables,
+} from '@qkix/better-blocks-core';
+import { render as renderPele } from 'pele';
 import type { CustomBlocksConfig, DiagramNode, DiagramTheme } from './types';
 import MermaidScript from './MermaidScript.astro';
 
@@ -17,12 +21,10 @@ const source = node.value ?? '';
 const format = node.format ?? 'mermaid';
 const DiagramComp = blocks?.diagram;
 
-// Resolve the color palette passed to beautiful-mermaid. Without one it renders
-// monochrome (every color is derived from a single dark `fg`). The built-in
-// themes only set an accent, which colors arrows but leaves node fills/borders
-// near-white - so our default mirrors mermaid.js's familiar look: lavender node
-// fills (`surface`) with purple borders (`border`) and dark edges (`line`). A
-// theme name selects a built-in palette; an object is used as custom colors.
+// The default palette mirrors mermaid.js's familiar look - lavender node fills
+// (`surface`) with purple borders (`border`) and dark edges (`line`) - so a
+// page reads the same whether it renders here or with `clientMermaid`. A theme
+// name selects a built-in palette; an object is used as custom colors.
 const DEFAULT_DIAGRAM_COLORS = {
   bg: '#ffffff',
   fg: '#333333',
@@ -32,28 +34,43 @@ const DEFAULT_DIAGRAM_COLORS = {
   surface: '#ececff',
   border: '#9370db',
 };
-const themeOptions =
-  diagramTheme == null
-    ? DEFAULT_DIAGRAM_COLORS
-    : typeof diagramTheme === 'object'
-      ? diagramTheme
-      : (THEMES[diagramTheme] ?? DEFAULT_DIAGRAM_COLORS);
+const colors = resolveDiagramColors(diagramTheme) ?? DEFAULT_DIAGRAM_COLORS;
 
-// beautiful-mermaid renders Mermaid to an SVG string synchronously on the
-// server - no browser, no client-side hydration. It throws on empty or invalid
-// input and on unsupported diagram types (gantt, pie, mindmap, gitGraph, …); in
-// that case we fall back to the raw source in a <pre> so content is never lost.
+// Pele colors its SVG through `--pele-*` custom properties, so the palette is
+// a style on the wrapper rather than part of the SVG. The SVG paints no
+// background of its own, so the wrapper carries that too - otherwise a dark
+// palette would sit on whatever the page is.
+const themeVars = toPeleThemeVariables(colors);
+const wrapperStyle = Object.entries(themeVars)
+  .map(([key, value]) => `${key}:${value}`)
+  .concat(themeVars['--pele-bg'] ? ['background:var(--pele-bg)'] : [])
+  .join(';');
+
+// An `accTitle` becomes `<title id="pele-title">` plus `aria-labelledby`, under
+// the same default prefix in every diagram, so with two on one page the second
+// is announced with the first one's title. A hash of the source keeps the
+// prefix unique per diagram and stable between builds.
+function idPrefixFor(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+  }
+  return `bb-pele-${(hash >>> 0).toString(36)}`;
+}
+
+// Pele renders Mermaid to an SVG string synchronously on the server - no
+// browser, no client-side hydration - and covers every diagram type built into
+// Mermaid. It throws on empty or invalid input; in that case we fall back to
+// the raw source in a <pre> so content is never lost.
 //
-// It is a reimplementation of mermaid's layout rather than mermaid itself, so
-// it disagrees with mermaid.js on some diagrams - flowcharts containing a cycle
-// come out in the wrong order, and sequence diagrams omit the closing actor row
-// mermaid draws at the foot of the lifelines. `clientMermaid` trades this
-// component's zero-JS default for mermaid.js proper, rendered after load.
+// It has its own layout and visual style rather than mermaid.js's, so a
+// diagram is laid out a little differently than mermaid draws it.
+// `clientMermaid` trades this component's zero-JS default for mermaid.js
+// proper, rendered after load.
 let svg: string | null = null;
 if (!DiagramComp && source && !clientMermaid) {
   try {
-    const out = renderMermaidSVG(source, themeOptions);
-    svg = typeof out === 'string' && out.includes('<svg') ? out : null;
+    svg = renderPele(source, { idPrefix: idPrefixFor(source) }).svg;
   } catch {
     svg = null;
   }
@@ -75,7 +92,7 @@ const Custom = DiagramComp as any;
     <MermaidScript />
   </>
 ) : svg !== null ? (
-  <div class="mermaid-diagram" set:html={svg} />
+  <div class="mermaid-diagram" style={wrapperStyle} set:html={svg} />
 ) : (
   <pre class="mermaid-source">{source}</pre>
 )}

@@ -1,11 +1,13 @@
 /**
- * Theming for `diagram` (Mermaid) blocks rendered by mermaid.js.
+ * Theming for `diagram` (Mermaid) blocks, for both engines the renderers use:
+ * mermaid.js in the browser and Pele on the server.
  *
  * mermaid.js is configured globally (`mermaid.initialize`), which is no use to
  * a renderer: every diagram on a page shares that one config, so the last
  * `diagramTheme` to initialize would win. The one supported way to theme a
  * single diagram is the `%%{init: …}%%` directive at the top of its source, so
- * that is what this module builds.
+ * that is what this module builds. Pele themes through CSS custom properties
+ * instead, which `toPeleThemeVariables` builds from the same palettes.
  *
  * The named palettes below are the ones `beautiful-mermaid` shipped. They are
  * inlined here rather than imported so the documented `diagramTheme` values
@@ -169,6 +171,42 @@ export function toMermaidThemeVariables(colors: DiagramColors): Record<string, s
   set('secondaryColor', colors.accent);
   set('tertiaryColor', colors.muted);
   set('fontFamily', colors.font);
+
+  return vars;
+}
+
+/**
+ * Maps a palette onto Pele's `--pele-*` CSS custom properties, for a style
+ * attribute on the element that wraps the SVG.
+ *
+ * Pele does not read `%%{init}%%` theme variables; its SVG colors everything
+ * through these properties, each with a built-in light fallback. Unlike
+ * mermaid, it derives nothing from what is set, so a palette that only carries
+ * bg/fg (`zinc-dark`, `github-dark`, …) would leave node fills on the light
+ * default and the text unreadable. The node fills, border and muted text are
+ * therefore mixed from bg/fg here whenever the palette leaves them out.
+ */
+export function toPeleThemeVariables(colors: DiagramColors): Record<string, string> {
+  const vars: Record<string, string> = {};
+  const set = (key: string, value: string | undefined) => {
+    if (value) vars[`--pele-${key}`] = value;
+  };
+  const mix = (percent: number) =>
+    colors.bg && colors.fg
+      ? `color-mix(in srgb, ${colors.fg} ${percent}%, ${colors.bg})`
+      : undefined;
+
+  set('bg', colors.transparent ? 'transparent' : colors.bg);
+  set('fg', colors.fg);
+  // Same fallbacks as the mermaid mapping above, so a palette reads the same
+  // under either engine.
+  set('line', colors.line ?? colors.accent ?? colors.fg);
+  set('accent', colors.accent);
+  set('muted', colors.muted ?? mix(60));
+  set('surface', colors.surface ?? mix(6));
+  set('surface-alt', mix(12));
+  set('border', colors.border ?? colors.accent ?? mix(45));
+  set('font', colors.font);
 
   return vars;
 }
