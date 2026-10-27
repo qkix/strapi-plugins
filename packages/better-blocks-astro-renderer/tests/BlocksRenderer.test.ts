@@ -1083,12 +1083,11 @@ describe('BlocksRenderer', () => {
         children: [{ type: 'text', text: '' }],
       },
     ]);
-    // Without a palette beautiful-mermaid renders monochrome (only fg/bg). The
-    // default mirrors mermaid.js: lavender node fill + purple border, so nodes -
-    // not just arrows - are colored.
-    const html = container.querySelector('div.mermaid-diagram')?.innerHTML.toLowerCase() ?? '';
-    expect(html).toContain('#ececff');
-    expect(html).toContain('#9370db');
+    // The default mirrors mermaid.js: lavender node fill + purple border, so
+    // nodes - not just arrows - are colored. Pele reads them from the wrapper.
+    const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
+    expect(style.toLowerCase()).toContain('--pele-surface:#ececff');
+    expect(style.toLowerCase()).toContain('--pele-border:#9370db');
   });
 
   it('applies a built-in diagram theme by name', async () => {
@@ -1103,8 +1102,11 @@ describe('BlocksRenderer', () => {
       ],
       { diagramTheme: 'dracula' }
     );
-    const html = container.querySelector('div.mermaid-diagram')?.innerHTML ?? '';
-    expect(html.toLowerCase()).toContain('#bd93f9');
+    const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
+    expect(style.toLowerCase()).toContain('--pele-accent:#bd93f9');
+    expect(style).toContain('background:var(--pele-bg)');
+    // Sized to the SVG, so the background hugs the diagram.
+    expect(style).toContain('width:fit-content');
   });
 
   it('applies a custom diagram color palette object', async () => {
@@ -1119,22 +1121,81 @@ describe('BlocksRenderer', () => {
       ],
       { diagramTheme: { bg: '#ffffff', fg: '#222222', accent: '#ff0000' } }
     );
-    const html = container.querySelector('div.mermaid-diagram')?.innerHTML ?? '';
-    expect(html.toLowerCase()).toContain('#ff0000');
+    const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
+    expect(style.toLowerCase()).toContain('--pele-accent:#ff0000');
   });
 
-  it('falls back to raw source in a <pre> for unsupported diagram types', async () => {
+  it('derives node fills for a palette that only sets bg and fg', async () => {
+    // Otherwise a dark palette leaves nodes on Pele's light default fill.
+    const { container } = await render(
+      [
+        {
+          type: 'diagram',
+          format: 'mermaid',
+          value: 'graph TD\n  A[Start] --> B[End];',
+          children: [{ type: 'text', text: '' }],
+        },
+      ],
+      { diagramTheme: 'zinc-dark' }
+    );
+    const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
+    expect(style).toContain('--pele-surface:color-mix(in srgb, #FAFAFA 6%, #18181B)');
+  });
+
+  it.each([
+    [
+      'gantt',
+      'gantt\n  title A\n  dateFormat YYYY-MM-DD\n  section S\n  Task :a1, 2024-01-01, 30d',
+    ],
+    ['pie', 'pie title Pets\n  "Dogs" : 3\n  "Cats" : 2'],
+    ['mindmap', 'mindmap\n  root((Root))\n    A\n    B'],
+    [
+      'gitGraph',
+      'gitGraph\n  commit\n  branch feature\n  commit\n  checkout main\n  merge feature',
+    ],
+  ])('renders %s diagrams to inline SVG on the server', async (_type, value) => {
+    const { container } = await render([
+      { type: 'diagram', format: 'mermaid', value, children: [{ type: 'text', text: '' }] },
+    ]);
+    expect(container.querySelector('div.mermaid-diagram svg')).not.toBeNull();
+    expect(container.querySelector('pre.mermaid-source')).toBeNull();
+  });
+
+  it('gives each diagram its own SVG id prefix', async () => {
+    // An accTitle becomes an id'd <title> the SVG is aria-labelledby. Pele's
+    // default prefix is the same in every diagram, so both would point at the
+    // first diagram's title.
     const { container } = await render([
       {
         type: 'diagram',
         format: 'mermaid',
-        value: 'gantt\n  title A\n  section S\n  Task :a1, 2024-01-01, 30d',
+        value: 'graph TD\n  accTitle: First\n  A --> B',
+        children: [{ type: 'text', text: '' }],
+      },
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  accTitle: Second\n  C --> D',
+        children: [{ type: 'text', text: '' }],
+      },
+    ]);
+    const ids = [...container.querySelectorAll('div.mermaid-diagram title[id]')].map((el) => el.id);
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+  });
+
+  it('falls back to raw source in a <pre> for a source that fails to parse', async () => {
+    const { container } = await render([
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  A -->',
         children: [{ type: 'text', text: '' }],
       },
     ]);
     const pre = container.querySelector('pre.mermaid-source');
     expect(pre).not.toBeNull();
-    expect(pre?.textContent).toContain('gantt');
+    expect(pre?.textContent).toContain('graph TD');
     expect(container.querySelector('div.mermaid-diagram')).toBeNull();
   });
 

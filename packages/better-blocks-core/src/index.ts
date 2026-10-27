@@ -7,6 +7,7 @@ export {
   applyDiagramTheme,
   resolveDiagramColors,
   toMermaidThemeVariables,
+  toPeleThemeVariables,
 } from './diagram';
 export type { DiagramColors, DiagramTheme, DiagramThemeName } from './diagram';
 export { getBlockStyle } from './style';
