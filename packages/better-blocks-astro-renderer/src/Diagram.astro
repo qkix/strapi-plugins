@@ -1,5 +1,6 @@
 ---
 import {
+  DEFAULT_DIAGRAM_COLORS,
   applyDiagramTheme,
   resolveDiagramColors,
   toPeleThemeVariables,
@@ -21,19 +22,9 @@ const source = node.value ?? '';
 const format = node.format ?? 'mermaid';
 const DiagramComp = blocks?.diagram;
 
-// The default palette mirrors mermaid.js's familiar look - lavender node fills
-// (`surface`) with purple borders (`border`) and dark edges (`line`) - so a
-// page reads the same whether it renders here or with `clientMermaid`. A theme
-// name selects a built-in palette; an object is used as custom colors.
-const DEFAULT_DIAGRAM_COLORS = {
-  bg: '#ffffff',
-  fg: '#333333',
-  line: '#333333',
-  accent: '#9370db',
-  muted: '#666666',
-  surface: '#ececff',
-  border: '#9370db',
-};
+// Without a theme, the shared default: mermaid.js's lavender look, which the
+// editor preview uses too. A theme name selects a built-in palette; an object
+// is used as custom colors.
 const colors = resolveDiagramColors(diagramTheme) ?? DEFAULT_DIAGRAM_COLORS;
 
 // Pele colors its SVG through `--pele-*` custom properties, so the palette is

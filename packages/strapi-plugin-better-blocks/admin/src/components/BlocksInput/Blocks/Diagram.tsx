@@ -1,5 +1,10 @@
 import * as React from 'react';
 
+import {
+  DEFAULT_DIAGRAM_COLORS,
+  type DiagramColors,
+  toPeleThemeVariables,
+} from '@qkix/better-blocks-core';
 import { Typography } from '@strapi/design-system';
 import { useIntl } from 'react-intl';
 import { Editor, Path, Transforms } from 'slate';
@@ -53,10 +58,15 @@ const DiagramIcon = ({ fill = 'currentColor', ...rest }: DiagramIconProps) => {
 };
 
 /* ---------------------------------------------------------------------------
- * Mermaid renderer (mermaid is heavy, so it is imported lazily on first use).
+ * Mermaid renderer. Pele, the engine the server-side renderers use, so the
+ * preview matches the published page. `pele/lazy` fetches each diagram type's
+ * code on first use, which keeps the admin bundle small. It is pure
+ * TypeScript: the admin's CSP has no `unsafe-eval`, so a WASM engine would not
+ * load here.
  * -------------------------------------------------------------------------*/
 
-// Monotonic counter for unique render ids (Slate/StrictMode may render twice).
+// Monotonic counter for unique SVG id prefixes. An `accTitle` becomes an id'd
+// <title>, and the block and its modal preview can be on screen together.
 let diagramRenderSeq = 0;
 
 // Rough luminance check on the editor background so the diagram theme matches
@@ -87,41 +97,36 @@ const MermaidContent = ({
   isDark: boolean;
 }) => {
   const { formatMessage } = useIntl();
-  const [svg, setSvg] = React.useState<string | null>(null);
+  const theme = useTheme();
+  const [rendered, setRendered] = React.useState<{
+    svg: string;
+    width: number;
+  } | null>(null);
   const [error, setError] = React.useState(false);
 
   React.useEffect(() => {
     let canceled = false;
 
     if (value.trim() === '') {
-      setSvg(null);
+      setRendered(null);
       setError(false);
       return undefined;
     }
 
     (async () => {
       try {
-        const mermaid = (await import('mermaid')).default;
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: isDark ? 'dark' : 'default',
-          // Block scripts/event handlers embedded in diagram definitions.
-          securityLevel: 'strict',
-        });
-        // Validate first so a syntax error doesn't leave stray DOM behind.
-        await mermaid.parse(value);
+        const { renderAsync } = await import('pele/lazy');
         diagramRenderSeq += 1;
-        const { svg: rendered } = await mermaid.render(
-          `bb-mermaid-${diagramRenderSeq}`,
-          value
-        );
+        const { svg, width } = await renderAsync(value, {
+          idPrefix: `bb-pele-${diagramRenderSeq}`,
+        });
         if (!canceled) {
-          setSvg(rendered);
+          setRendered({ svg, width });
           setError(false);
         }
       } catch {
         if (!canceled) {
-          setSvg(null);
+          setRendered(null);
           setError(true);
         }
       }
@@ -130,7 +135,26 @@ const MermaidContent = ({
     return () => {
       canceled = true;
     };
-  }, [value, isDark]);
+  }, [value]);
+
+  // Pele colors the SVG through `--pele-*` custom properties, so the theme is
+  // a style on the wrapper and switching light/dark needs no re-render. Light
+  // mode uses the renderers' default palette, so the preview looks like the
+  // page. Dark mode builds one from Strapi's own colors, with the node fills
+  // mixed from bg/fg. Its accent is primary600, which the dark theme makes the
+  // light one (primary500 is a deep blue that vanishes on the background), and
+  // edges are a light grey. `bg` is what edge labels are masked with, so it is
+  // the block's background either way.
+  const colors = theme?.colors as unknown as Record<string, string> | undefined;
+  const palette: DiagramColors = isDark
+    ? {
+        bg: colors?.neutral100,
+        fg: colors?.neutral800,
+        line: colors?.neutral500,
+        accent: colors?.primary600,
+      }
+    : { ...DEFAULT_DIAGRAM_COLORS, bg: colors?.neutral100 };
+  const themeVars = toPeleThemeVariables(palette) as React.CSSProperties;
 
   if (error) {
     return (
@@ -143,7 +167,7 @@ const MermaidContent = ({
     );
   }
 
-  if (svg === null) {
+  if (rendered === null) {
     return (
       <Typography variant="pi" textColor="neutral400">
         …
@@ -151,8 +175,17 @@ const MermaidContent = ({
     );
   }
 
-  // eslint-disable-next-line react/no-danger
-  return <span dangerouslySetInnerHTML={{ __html: svg }} />;
+  // The natural width lets the source editor's preview show the diagram at its
+  // own size, capped to the pane, so its zoom controls have something to scale.
+  const style = {
+    ...themeVars,
+    '--bb-diagram-width': `${rendered.width}px`,
+  } as React.CSSProperties;
+
+  return (
+    // eslint-disable-next-line react/no-danger
+    <span style={style} dangerouslySetInnerHTML={{ __html: rendered.svg }} />
+  );
 };
 
 /* ---------------------------------------------------------------------------

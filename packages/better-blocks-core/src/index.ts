@@ -3,6 +3,7 @@ export { getFileIcon, formatFileSize } from './file';
 export { getListStyleType } from './list';
 export { getAspectRatio } from './media';
 export {
+  DEFAULT_DIAGRAM_COLORS,
   DIAGRAM_THEMES,
   applyDiagramTheme,
   resolveDiagramColors,
