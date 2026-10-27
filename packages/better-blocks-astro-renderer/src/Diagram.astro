@@ -39,11 +39,16 @@ const colors = resolveDiagramColors(diagramTheme) ?? DEFAULT_DIAGRAM_COLORS;
 // Pele colors its SVG through `--pele-*` custom properties, so the palette is
 // a style on the wrapper rather than part of the SVG. The SVG paints no
 // background of its own, so the wrapper carries that too - otherwise a dark
-// palette would sit on whatever the page is.
+// palette would sit on whatever the page is. The wrapper is sized to the SVG
+// so that background hugs the diagram instead of running across the column.
 const themeVars = toPeleThemeVariables(colors);
 const wrapperStyle = Object.entries(themeVars)
   .map(([key, value]) => `${key}:${value}`)
-  .concat(themeVars['--pele-bg'] ? ['background:var(--pele-bg)'] : [])
+  .concat(
+    themeVars['--pele-bg']
+      ? ['background:var(--pele-bg)', 'width:fit-content', 'max-width:100%']
+      : []
+  )
   .join(';');
 
 // An `accTitle` becomes `<title id="pele-title">` plus `aria-labelledby`, under

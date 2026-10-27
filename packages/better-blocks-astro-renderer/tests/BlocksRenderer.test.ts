@@ -1105,6 +1105,8 @@ describe('BlocksRenderer', () => {
     const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
     expect(style.toLowerCase()).toContain('--pele-accent:#bd93f9');
     expect(style).toContain('background:var(--pele-bg)');
+    // Sized to the SVG, so the background hugs the diagram.
+    expect(style).toContain('width:fit-content');
   });
 
   it('applies a custom diagram color palette object', async () => {
