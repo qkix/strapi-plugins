@@ -196,7 +196,7 @@ Diagrams use a palette that mirrors mermaid.js's familiar default (lavender node
 />
 ```
 
-The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. Changing `diagramTheme` restyles a diagram without rendering it again, and you can override any [Pele variable](https://pele.run/theming) from your own CSS. An `%%{init}%%` directive in a diagram's source no longer changes its colors.
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. Changing `diagramTheme` restyles a diagram without rendering it again, and you can override any [Pele variable](https://pele.run/theming) from your own CSS. An `%%{init}%%` directive in a diagram's source no longer changes its colors. The same palettes and defaults apply in the React and Astro renderers.
 
 ### Callouts (Admonitions)
 

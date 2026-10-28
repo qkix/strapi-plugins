@@ -1564,6 +1564,93 @@ describe('BlocksRenderer', () => {
     expect(wrapper.style.maxWidth).toBe('100%');
   });
 
+  it('applies a built-in diagram theme on the wrapper', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  A-->B',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container } = render(<BlocksRenderer content={content} diagramTheme="dracula" />);
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram')).toBeInTheDocument();
+    });
+    const wrapper = container.querySelector<HTMLElement>('div.mermaid-diagram')!;
+    expect(wrapper.style.getPropertyValue('--pele-bg')).toBe('#282a36');
+    expect(wrapper.style.getPropertyValue('--pele-accent')).toBe('#bd93f9');
+  });
+
+  it('applies a custom diagram color palette on the wrapper', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  A-->B',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container } = render(
+      <BlocksRenderer
+        content={content}
+        diagramTheme={{ bg: '#ffffff', fg: '#222222', accent: '#ff0000' }}
+      />
+    );
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram')).toBeInTheDocument();
+    });
+    const wrapper = container.querySelector<HTMLElement>('div.mermaid-diagram')!;
+    expect(wrapper.style.getPropertyValue('--pele-accent')).toBe('#ff0000');
+  });
+
+  it('restyles without re-rendering when the diagram theme changes', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  A-->B',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container, rerender } = render(
+      <BlocksRenderer content={content} diagramTheme="dracula" />
+    );
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram svg')).toBeInTheDocument();
+    });
+    const svgBefore = container.querySelector('div.mermaid-diagram svg');
+
+    rerender(<BlocksRenderer content={content} diagramTheme="nord" />);
+
+    const wrapper = container.querySelector<HTMLElement>('div.mermaid-diagram')!;
+    expect(wrapper.style.getPropertyValue('--pele-bg')).toBe('#2e3440');
+    expect(container.querySelector('div.mermaid-diagram svg')).toBe(svgBefore);
+  });
+
+  it('themes diagrams nested inside a callout', async () => {
+    const content = [
+      {
+        type: 'callout',
+        variant: 'note',
+        children: [
+          {
+            type: 'diagram',
+            format: 'mermaid',
+            value: 'graph TD\n  A-->B',
+            children: [{ type: 'text', text: '' }],
+          },
+        ],
+      },
+    ] as unknown as BlocksContent;
+    const { container } = render(<BlocksRenderer content={content} diagramTheme="dracula" />);
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram')).toBeInTheDocument();
+    });
+    const wrapper = container.querySelector<HTMLElement>('div.mermaid-diagram')!;
+    expect(wrapper.style.getPropertyValue('--pele-bg')).toBe('#282a36');
+  });
+
   it('keeps the raw source when the diagram fails to parse', async () => {
     const content: BlocksContent = [
       {

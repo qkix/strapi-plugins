@@ -119,13 +119,13 @@ import 'katex/dist/katex.min.css';
 
 Every diagram type built into Mermaid renders (flowchart, sequence, state, class, ER, gantt, pie, mindmap, gitGraph, xychart, …) to a `<div class="mermaid-diagram">` wrapping the generated SVG. A source that fails to parse falls back gracefully to the raw definition in a `<pre class="mermaid-source">`, so content is never lost.
 
-Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it. If you need mermaid.js's exact output, see [`clientMermaid`](#rendering-with-mermaidjs-instead-clientmermaid).
+Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it. The React and Vue renderers and the Strapi editor preview use Pele too, so a diagram looks the same everywhere.
 
 `pele` ships as a dependency of this package, so no extra install or stylesheet is required.
 
 #### Diagram colors
 
-Diagrams render **in color** by default, with a palette that mirrors mermaid.js's familiar look (lavender node fills, purple borders, dark edges). Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border }`):
+Diagrams render **in color** by default, with a palette that mirrors mermaid.js's familiar look (lavender node fills, purple borders, dark edges). Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border, font, transparent }`):
 
 ```astro
 ---
@@ -140,9 +140,11 @@ const { blocks } = Astro.props;
 <BlocksRenderer content={blocks} diagramTheme={{ bg: '#fff', fg: '#1f2328', accent: '#8250df' }} />
 ```
 
-The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. You can also override any [Pele variable](https://pele.run/theming) from your own CSS.
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. You can also override any [Pele variable](https://pele.run/theming) from your own CSS. The same palettes and defaults apply in the React and Vue renderers.
 
-#### Rendering with mermaid.js instead (`clientMermaid`)
+#### Rendering with mermaid.js instead (`clientMermaid`, deprecated)
+
+> **Deprecated.** Every renderer and the editor preview now draw diagrams with Pele, so `clientMermaid` is the one place a diagram would look different from the rest. It still works, and will be removed in a future release. If you need mermaid.js, supply your own `diagram` renderer via `blocks.diagram` instead.
 
 Set `clientMermaid` to render diagrams with mermaid.js in the browser instead, for mermaid's own layout and look:
 

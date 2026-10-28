@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
-import { DEFAULT_DIAGRAM_COLORS, toPeleWrapperStyle } from '@qkix/better-blocks-core';
+import {
+  DEFAULT_DIAGRAM_COLORS,
+  resolveDiagramColors,
+  toPeleWrapperStyle,
+  type DiagramTheme,
+} from '@qkix/better-blocks-core';
 
 // Pele is the Mermaid engine the Astro renderer runs on the server and the
 // editor previews with, so a diagram looks the same everywhere. It could render
@@ -21,13 +26,10 @@ function loadPele() {
 // the same default prefix in every diagram, so each render gets its own.
 let renderCount = 0;
 
-// Pele colors its SVG through `--pele-*` custom properties, so the palette is
-// a style on the wrapper: the shared default, mermaid.js's lavender look. The
-// shared helper returns CSS text; React wants an object with camelCased names
-// (custom properties keep theirs).
-const WRAPPER_STYLE = toPeleWrapperStyle(DEFAULT_DIAGRAM_COLORS)
-  .split(';')
-  .reduce<Record<string, string>>((style, declaration) => {
+// The shared wrapper style is CSS text; React wants an object with camelCased
+// names (custom properties keep theirs).
+function toReactStyle(cssText: string): CSSProperties {
+  return cssText.split(';').reduce<Record<string, string>>((style, declaration) => {
     const at = declaration.indexOf(':');
     const name = declaration.slice(0, at);
     const key = name.startsWith('--')
@@ -36,6 +38,7 @@ const WRAPPER_STYLE = toPeleWrapperStyle(DEFAULT_DIAGRAM_COLORS)
     style[key] = declaration.slice(at + 1);
     return style;
   }, {}) as CSSProperties;
+}
 
 /**
  * Renders a Mermaid diagram to inline SVG on the client.
@@ -45,8 +48,26 @@ const WRAPPER_STYLE = toPeleWrapperStyle(DEFAULT_DIAGRAM_COLORS)
  * mount. If Pele fails to parse the diagram, the raw source remains as a
  * graceful fallback instead of crashing the page.
  */
-export function MermaidDiagram({ value }: { value: string }): ReactNode {
+export function MermaidDiagram({
+  value,
+  theme,
+}: {
+  value: string;
+  theme?: DiagramTheme;
+}): ReactNode {
   const [svg, setSvg] = useState<string | null>(null);
+
+  // Pele colors its SVG through `--pele-*` custom properties, so the theme is a
+  // style on the wrapper: changing it restyles the diagram without rendering
+  // it again. Without a theme, the shared default (mermaid.js's lavender look).
+  // Keyed on the theme's content, since an inline object is a new reference on
+  // every parent render.
+  const themeKey = typeof theme === 'object' ? JSON.stringify(theme) : (theme ?? '');
+  const wrapperStyle = useMemo(
+    () => toReactStyle(toPeleWrapperStyle(resolveDiagramColors(theme) ?? DEFAULT_DIAGRAM_COLORS)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [themeKey]
+  );
 
   useEffect(() => {
     let canceled = false;
@@ -73,7 +94,7 @@ export function MermaidDiagram({ value }: { value: string }): ReactNode {
     return (
       <div
         className="mermaid-diagram"
-        style={WRAPPER_STYLE}
+        style={wrapperStyle}
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );
