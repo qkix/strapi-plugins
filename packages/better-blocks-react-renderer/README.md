@@ -90,11 +90,11 @@ import 'katex/dist/katex.min.css';
 
 ### Diagrams (Mermaid)
 
-Block-level `diagram` nodes (`format: 'mermaid'`) are rendered to inline SVG with [Mermaid](https://mermaid.js.org/) &mdash; flowcharts, sequence, class, state, ER, pie charts, and more.
+Block-level `diagram` nodes (`format: 'mermaid'`) are rendered to inline SVG with [Pele](https://pele.run), the same Mermaid engine the Astro renderer runs on the server and the Strapi editor previews with, so a diagram looks the same everywhere. Every diagram type built into [Mermaid](https://mermaid.js.org/) renders: flowcharts, sequence, class, state, ER, gantt, pie charts, mindmaps, gitGraph, and more. Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it.
 
-Unlike KaTeX, Mermaid needs a real browser DOM to measure text, so it cannot render synchronously on the server. The renderer keeps SSR/static export safe by emitting the raw Mermaid source inside a `<pre class="mermaid-source">` on the server and during the first client render (so hydration matches), then swapping in the rendered `<div class="mermaid-diagram">` SVG after mount. If Mermaid fails to parse the source, the raw text stays in place as a graceful fallback.
+Unlike KaTeX, diagrams render on the client. The renderer keeps SSR/static export safe by emitting the raw Mermaid source inside a `<pre class="mermaid-source">` on the server and during the first client render (so hydration matches), then swapping in the rendered `<div class="mermaid-diagram">` SVG after mount. If Pele fails to parse the source, the raw text stays in place as a graceful fallback. The diagram is themed with a palette that mirrors mermaid.js's familiar default (lavender node fills, purple borders), applied as [`--pele-*` CSS custom properties](https://pele.run/theming) on the wrapper, so you can override any of them from your own CSS.
 
-`mermaid` ships as a dependency and is **lazy-loaded** the first time a diagram renders, so it stays out of your server bundle and only downloads on pages that actually use a diagram &mdash; no setup or stylesheet import required.
+`pele` ships as a dependency and is **lazy-loaded** through `pele/lazy`, which fetches each diagram type's code the first time a diagram of that type renders. It stays out of your server bundle, a page without diagrams downloads none of it, and a page with a flowchart downloads only the flowchart (tens of kilobytes, where mermaid.js was about a megabyte) &mdash; no setup or stylesheet import required.
 
 To render diagrams yourself (e.g. a different engine or custom theming), override the `diagram` block:
 

@@ -43,7 +43,7 @@ The official Strapi blocks renderers are built for React. If your site is built 
 
 This package is a **native Vue 3 renderer**. It renders Strapi v5 Blocks content - including every feature the [Better Blocks](https://github.com/qkix/strapi-plugins) plugin adds (color marks, text alignment, to-do lists, tables, media embeds, and more) - using plain Vue single-file components.
 
-Everything that can be finished on the server is: math is typeset with KaTeX **during SSR**, byte-identical to what the client would produce, so a Nuxt page ships finished markup and hydrates over it with no mismatch. Only what cannot run anywhere else runs in the browser - Shiki code highlighting (asynchronous by nature), mermaid diagrams (mermaid measures text against a real DOM), and the social-platform widget scripts (lazy, and only when an embed nears the viewport).
+Everything that can be finished on the server is: math is typeset with KaTeX **during SSR**, byte-identical to what the client would produce, so a Nuxt page ships finished markup and hydrates over it with no mismatch. Only what cannot run anywhere else runs in the browser - Shiki code highlighting (asynchronous by nature), Mermaid diagrams (the engine loads lazily, per diagram type), and the social-platform widget scripts (lazy, and only when an embed nears the viewport).
 
 It is a **drop-in renderer** that handles all Better Blocks features out of the box - no configuration needed. In Nuxt, [one module line](#nuxt) is the whole setup.
 
@@ -157,7 +157,7 @@ export default defineNuxtConfig({
 });
 ```
 
-Everything renders on the server. A page of Strapi content - math, diagrams, tables, callouts and all - arrives as HTML; hydration only wires up the two client-side pieces (code highlighting and the lazy widget scripts).
+Almost everything renders on the server. A page of Strapi content - math, tables, callouts and all - arrives as HTML; hydration only wires up the client-side pieces (code highlighting, diagrams and the lazy widget scripts).
 
 ### Math (KaTeX)
 
@@ -173,15 +173,17 @@ import 'katex/dist/katex.min.css';
 
 ### Diagrams (Mermaid)
 
-[Mermaid](https://mermaid.js.org/) diagram blocks (`{ type: 'diagram', format: 'mermaid' }`) are rendered to inline SVG by **mermaid.js itself, in the browser**. mermaid measures text against a real DOM, so - unlike KaTeX - it cannot render during SSR. The server and the first client render both emit the raw definition in a `<pre class="mermaid-source">`, so **hydration matches**, and a `<div class="mermaid-diagram">` wrapping the SVG replaces it after mount.
+[Mermaid](https://mermaid.js.org/) diagram blocks (`{ type: 'diagram', format: 'mermaid' }`) are rendered to inline SVG **in the browser** by [Pele](https://pele.run), the same engine the Astro renderer runs on the server and the Strapi editor previews with, so a diagram looks the same everywhere. Every diagram type built into Mermaid renders (flowchart, sequence, state, class, ER, gantt, pie, mindmap, gitGraph, …). The server and the first client render both emit the raw definition in a `<pre class="mermaid-source">`, so **hydration matches**, and a `<div class="mermaid-diagram">` wrapping the SVG replaces it after mount.
 
-mermaid is loaded on demand (one instance shared by every diagram on the page) and stays out of the server bundle entirely. If it fails to load, or the source fails to parse, the `<pre>` remains as a graceful fallback so content is never lost.
+Pele is loaded on demand through `pele/lazy`, which fetches each diagram type's code the first time a diagram of that type renders: a page without diagrams loads none of it, and a page with a flowchart loads only the flowchart (tens of kilobytes, where mermaid.js was about a megabyte). It stays out of the server bundle entirely. If it fails to load, or the source fails to parse, the `<pre>` remains as a graceful fallback so content is never lost.
 
-> Earlier versions rendered diagrams to SVG on the server with `beautiful-mermaid`, which needs no browser. That is a reimplementation of mermaid's layout rather than mermaid itself, and it disagreed with the real thing on real content - flowcharts containing a cycle came out in the wrong order, and sequence diagrams omitted the closing actor row mermaid draws at the foot of the lifelines. Every diagram type mermaid supports now renders exactly as mermaid renders it, including the ones (gantt, pie, mindmap, gitGraph, …) that had no server-side implementation at all.
+Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it.
+
+> Earlier versions rendered diagrams on the server with `beautiful-mermaid`, which drew flowcharts containing a cycle in the wrong order and omitted the closing actor row of sequence diagrams, and then with mermaid.js in the browser, which is about a megabyte of JavaScript. Pele renders correctly and loads only the diagram types a page uses.
 
 #### Diagram colors
 
-Diagrams use mermaid.js's own default theme. Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border, font, transparent }`):
+Diagrams use a palette that mirrors mermaid.js's familiar default (lavender node fills, purple borders, dark edges). Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border, font, transparent }`):
 
 ```vue
 <!-- built-in theme -->
@@ -194,7 +196,7 @@ Diagrams use mermaid.js's own default theme. Pass `diagramTheme` to pick a built
 />
 ```
 
-The palette is applied per diagram, as a [`%%{init}%%` directive](https://mermaid.js.org/config/directives.html) prepended to its source - mermaid's own configuration is global, so it could not carry a different theme for two renderers on one page. A diagram whose source already begins with an `init` directive keeps that one: the author's intent is the more specific.
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. Changing `diagramTheme` restyles a diagram without rendering it again, and you can override any [Pele variable](https://pele.run/theming) from your own CSS. An `%%{init}%%` directive in a diagram's source no longer changes its colors.
 
 ### Callouts (Admonitions)
 
@@ -391,7 +393,7 @@ The copy button is themed via `--bb-code-copy-fg`, `--bb-code-copy-bg`, `--bb-co
 | `format`            | math                      | `inline` (`<span>`) or `block` (`<div>`)                                                               |
 | `value`             | math                      | LaTeX source rendered with KaTeX                                                                       |
 | `format`            | diagram                   | `mermaid` (the only supported diagram format)                                                          |
-| `value`             | diagram                   | Mermaid source, rendered to SVG by mermaid.js on the client                                            |
+| `value`             | diagram                   | Mermaid source, rendered to SVG by Pele on the client                                                  |
 | `summary`           | details                   | Plain-text label for the `<summary>`                                                                   |
 | `defaultOpen`       | details                   | Open on initial render (HTML `open` attribute)                                                         |
 | `buttonType`        | button                    | `link` (CTA) or `file` (Media Library download)                                                        |

@@ -6,6 +6,7 @@ import {
   resolveDiagramColors,
   toMermaidThemeVariables,
   toPeleThemeVariables,
+  toPeleWrapperStyle,
 } from '../src/diagram';
 
 const SOURCE = 'graph TD\n  A[Start] --> B[End]';
@@ -167,5 +168,19 @@ describe('toPeleThemeVariables', () => {
       '--pele-fg': '#222',
       '--pele-line': '#222',
     });
+  });
+});
+
+describe('toPeleWrapperStyle', () => {
+  it('carries the palette vars and paints a background sized to the diagram', () => {
+    const style = toPeleWrapperStyle({ bg: '#000000', fg: '#ffffff' });
+    expect(style).toContain('--pele-bg:#000000');
+    expect(style).toContain('background:var(--pele-bg)');
+    expect(style).toContain('width:fit-content');
+    expect(style).toContain('max-width:100%');
+  });
+
+  it('paints no background when the palette has none', () => {
+    expect(toPeleWrapperStyle({ fg: '#222222' })).toBe('--pele-fg:#222222;--pele-line:#222222');
   });
 });

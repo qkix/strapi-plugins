@@ -3,17 +3,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BlocksRenderer } from '../src';
 import type { BlocksContent } from '../src';
 
-// Mermaid needs a real browser DOM, so stub it with a renderer that echoes the
-// source into a marker SVG. This keeps the diagram tests fast and deterministic.
-vi.mock('mermaid', () => ({
-  default: {
-    initialize: vi.fn(),
-    render: vi.fn(async (_id: string, code: string) => ({
-      svg: `<svg class="mock-mermaid"><text>${code}</text></svg>`,
-    })),
-  },
-}));
-
 // Shiki loads WASM grammars, so stub it with a highlighter that echoes the
 // resolved grammar id and theme into the markup. Tests then assert on the
 // rendered output rather than on spy calls, which keeps them independent of the
@@ -1521,7 +1510,41 @@ describe('BlocksRenderer', () => {
     expect(pre?.textContent).toContain('graph TD');
   });
 
-  it('renders a mermaid diagram to inline SVG after mount', async () => {
+  // Pele, the real engine: it is pure TypeScript and needs no layout engine,
+  // so it renders in jsdom as it does in a browser.
+  it('renders a mermaid diagram to inline SVG with Pele after mount', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  A[Start]-->B[End]',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container } = render(<BlocksRenderer content={content} />);
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram svg.pele-flowchart')).toBeInTheDocument();
+    });
+    expect(container.querySelector('div.mermaid-diagram')?.textContent).toContain('Start');
+    expect(container.querySelector('pre.mermaid-source')).toBeNull();
+  });
+
+  it('renders diagram types beyond flowcharts', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'pie title Pets\n  "Dogs" : 3\n  "Cats" : 2',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container } = render(<BlocksRenderer content={content} />);
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram svg.pele-pie')).toBeInTheDocument();
+    });
+  });
+
+  it('themes the diagram with the default palette on its wrapper', async () => {
     const content: BlocksContent = [
       {
         type: 'diagram',
@@ -1532,9 +1555,54 @@ describe('BlocksRenderer', () => {
     ];
     const { container } = render(<BlocksRenderer content={content} />);
     await waitFor(() => {
-      expect(container.querySelector('div.mermaid-diagram svg.mock-mermaid')).toBeInTheDocument();
+      expect(container.querySelector('div.mermaid-diagram')).toBeInTheDocument();
     });
-    expect(container.querySelector('div.mermaid-diagram')?.textContent).toContain('A-->B');
+    const wrapper = container.querySelector<HTMLElement>('div.mermaid-diagram')!;
+    expect(wrapper.style.getPropertyValue('--pele-surface')).toBe('#ececff');
+    expect(wrapper.style.getPropertyValue('--pele-border')).toBe('#9370db');
+    expect(wrapper.style.background).toBe('var(--pele-bg)');
+    expect(wrapper.style.maxWidth).toBe('100%');
+  });
+
+  it('keeps the raw source when the diagram fails to parse', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: 'graph TD\n  A -->',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container } = render(<BlocksRenderer content={content} />);
+    // Wait until the engine has actually loaded and rejected this source, so
+    // the assertion below is not just catching the pre-render fallback.
+    const { renderAsync } = await import('pele/lazy');
+    await expect(renderAsync('graph TD\n  A -->')).rejects.toThrow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(container.querySelector('pre.mermaid-source')?.textContent).toBe('graph TD\n  A -->');
+    expect(container.querySelector('div.mermaid-diagram')).toBeNull();
+  });
+
+  it('gives each diagram its own SVG id prefix', async () => {
+    const diagram = (value: string): BlocksContent[number] => ({
+      type: 'diagram',
+      format: 'mermaid',
+      value,
+      children: [{ type: 'text', text: '' }],
+    });
+    const { container } = render(
+      <BlocksRenderer
+        content={[
+          diagram('graph LR\n  accTitle: First\n  A-->B'),
+          diagram('graph LR\n  accTitle: Second\n  C-->D'),
+        ]}
+      />
+    );
+    await waitFor(() => {
+      expect(container.querySelectorAll('div.mermaid-diagram title[id]')).toHaveLength(2);
+    });
+    const ids = [...container.querySelectorAll('div.mermaid-diagram title[id]')].map((t) => t.id);
+    expect(new Set(ids).size).toBe(2);
   });
 
   it('uses a custom diagram renderer with code and format props', () => {

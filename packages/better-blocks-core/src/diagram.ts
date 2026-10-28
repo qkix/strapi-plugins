@@ -228,6 +228,24 @@ export function toPeleThemeVariables(colors: DiagramColors): Record<string, stri
 }
 
 /**
+ * The inline style for the element that wraps a Pele SVG, as CSS text: the
+ * palette's `--pele-*` properties, plus the background. Pele's SVG paints no
+ * background of its own, so without this a dark palette would sit on whatever
+ * the page is; the wrapper is sized to the SVG so that background hugs the
+ * diagram instead of running across the column, and `max-width` lets a wide
+ * diagram still shrink to fit.
+ */
+export function toPeleWrapperStyle(colors: DiagramColors): string {
+  const vars = toPeleThemeVariables(colors);
+  return Object.entries(vars)
+    .map(([key, value]) => `${key}:${value}`)
+    .concat(
+      vars['--pele-bg'] ? ['background:var(--pele-bg)', 'width:fit-content', 'max-width:100%'] : []
+    )
+    .join(';');
+}
+
+/**
  * Prepends mermaid's `%%{init}%%` directive to a diagram's source so it renders
  * with `theme`.
  *
