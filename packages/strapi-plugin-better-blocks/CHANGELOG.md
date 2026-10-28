@@ -1,3 +1,14 @@
+## 0.24.0 (2026-10-28)
+
+### 🚀 Features
+
+- **better-blocks-core,better-blocks-react-renderer,better-blocks-vue-renderer,better-blocks-astro-renderer,strapi-plugin-better-blocks:** render diagrams with Pele everywhere, aligned, with a safe upgrade path ([#195](https://github.com/qkix/strapi-plugins/pull/195))
+- **better-blocks-core,strapi-plugin-better-blocks:** render the editor's diagram preview with Pele ([#194](https://github.com/qkix/strapi-plugins/pull/194))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.23.12 (2026-10-26)
 
 ### 🩹 Fixes

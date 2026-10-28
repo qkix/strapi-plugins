@@ -1,3 +1,7 @@
+## 0.3.3 (2026-10-28)
+
+This was a version bump only for @qkix/chartkit-editor to align it with other projects, there were no code changes.
+
 ## 0.3.2 (2026-10-26)
 
 ### 🩹 Fixes
