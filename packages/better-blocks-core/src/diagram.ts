@@ -140,6 +140,22 @@ export const DIAGRAM_THEMES: Record<DiagramThemeName, DiagramColors> = {
   },
 };
 
+/**
+ * The palette Pele renders with when no `diagramTheme` is given. It mirrors
+ * mermaid.js's familiar default - lavender node fills (`surface`) with purple
+ * borders (`border`) and dark edges (`line`) - so a diagram reads the same in
+ * the editor preview, on a server-rendered page, and under mermaid.js.
+ */
+export const DEFAULT_DIAGRAM_COLORS: DiagramColors = {
+  bg: '#ffffff',
+  fg: '#333333',
+  line: '#333333',
+  accent: '#9370db',
+  muted: '#666666',
+  surface: '#ececff',
+  border: '#9370db',
+};
+
 /** Resolves either form of `diagramTheme` to a palette, or `null` if unknown. */
 export function resolveDiagramColors(theme: DiagramTheme | undefined | null): DiagramColors | null {
   if (theme == null) return null;

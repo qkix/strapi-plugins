@@ -114,16 +114,19 @@ const PreviewInner = styled.div<{ $scale: number }>`
   text-align: center;
 
   /* The rendered output is wrapped in a single span (Mermaid SVG or KaTeX).
-     Let it fill the pane width so diagrams aren't tiny by default. */
+     Let it span the pane, so a diagram is centered and capped to the pane. */
   > span {
     width: 100%;
   }
 
   /* Size ONLY the Mermaid diagram SVG (rendered as a direct span > svg).
      KaTeX renders radicals (e.g. √) as inline <svg> deep inside .katex; forcing
-     a size on those collapses them, so they must keep their intrinsic size. */
+     a size on those collapses them, so they must keep their intrinsic size.
+     A diagram shows at its natural width (--bb-diagram-width, set by the
+     diagram preview) capped to the pane; filling the pane instead would leave
+     the zoom controls nothing to scale. */
   > span > svg {
-    width: 100%;
+    width: min(100%, var(--bb-diagram-width, 100%));
     max-width: 100%;
     height: auto;
   }
