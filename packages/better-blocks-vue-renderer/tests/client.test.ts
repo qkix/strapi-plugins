@@ -230,6 +230,16 @@ describe('diagrams', () => {
     expect(wrapperStyle(wrapper).getPropertyValue('--pele-accent')).toBe('#ff0000');
   });
 
+  it('keeps the colors a mermaid %%{init}%% directive in the source asks for', async () => {
+    const wrapper = mountContent(diagram('%%{init: {"theme": "forest"}}%%\ngraph TD\n  A-->B'), {
+      diagramTheme: 'dracula',
+    });
+
+    await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-surface')).toBe('#cde498');
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-border')).toBe('#13540c');
+  });
+
   it('restyles without re-rendering when the theme changes', async () => {
     const wrapper = mountContent(diagram('graph TD\n  A-->B'), { diagramTheme: 'dracula' });
     await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DEFAULT_DIAGRAM_COLORS,
   DIAGRAM_THEMES,
+  MERMAID_THEME_COLORS,
+  diagramColorsFromSource,
+  resolveDiagramPalette,
   applyDiagramTheme,
   resolveDiagramColors,
   toMermaidThemeVariables,
   toPeleThemeVariables,
   toPeleWrapperStyle,
+  toPeleWrapperStyleObject,
 } from '../src/diagram';
 
 const SOURCE = 'graph TD\n  A[Start] --> B[End]';
@@ -182,5 +187,99 @@ describe('toPeleWrapperStyle', () => {
 
   it('paints no background when the palette has none', () => {
     expect(toPeleWrapperStyle({ fg: '#222222' })).toBe('--pele-fg:#222222;--pele-line:#222222');
+  });
+});
+
+describe('diagramColorsFromSource', () => {
+  it('returns null when the source sets no colors', () => {
+    expect(diagramColorsFromSource(SOURCE)).toBeNull();
+    expect(
+      diagramColorsFromSource('%%{init: {"flowchart": {"curve": "basis"}}}%%\n' + SOURCE)
+    ).toBeNull();
+  });
+
+  it("maps a named mermaid theme onto that theme's palette", () => {
+    expect(diagramColorsFromSource('%%{init: {"theme": "dark"}}%%\n' + SOURCE)).toEqual(
+      MERMAID_THEME_COLORS.dark
+    );
+    expect(diagramColorsFromSource('%%{init: {"theme": "forest"}}%%\n' + SOURCE)).toEqual(
+      MERMAID_THEME_COLORS.forest
+    );
+  });
+
+  it('accepts the loose syntax mermaid accepts', () => {
+    // Single quotes, unquoted keys, trailing commas, the `initialize` alias.
+    expect(diagramColorsFromSource("%%{init: { 'theme': 'neutral', }}%%\n" + SOURCE)).toEqual(
+      MERMAID_THEME_COLORS.neutral
+    );
+    expect(diagramColorsFromSource('%%{initialize: { theme: "dark" }}%%\n' + SOURCE)).toEqual(
+      MERMAID_THEME_COLORS.dark
+    );
+  });
+
+  it('applies themeVariables on top of the named theme', () => {
+    const colors = diagramColorsFromSource(
+      '%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ff0000", "lineColor": "#00ff00", "primaryTextColor": "#0000ff", "fontFamily": "Inter"}}}%%\n' +
+        SOURCE
+    );
+    expect(colors).toMatchObject({
+      bg: MERMAID_THEME_COLORS.base.bg,
+      surface: '#ff0000',
+      line: '#00ff00',
+      fg: '#0000ff',
+      font: 'Inter',
+    });
+  });
+
+  it('reads back the directive applyDiagramTheme writes', () => {
+    // Content saved while the renderers still themed through directives must
+    // come out in the same colors.
+    const themed = applyDiagramTheme(SOURCE, 'dracula');
+    const colors = diagramColorsFromSource(themed);
+    expect(colors?.bg).toBe(DIAGRAM_THEMES.dracula.bg);
+    expect(colors?.fg).toBe(DIAGRAM_THEMES.dracula.fg);
+    expect(colors?.border).toBe(DIAGRAM_THEMES.dracula.accent);
+  });
+
+  it('reads a theme named in frontmatter config', () => {
+    expect(diagramColorsFromSource('---\nconfig:\n  theme: forest\n---\n' + SOURCE)).toEqual(
+      MERMAID_THEME_COLORS.forest
+    );
+  });
+
+  it('ignores an unknown theme name with no variables', () => {
+    expect(diagramColorsFromSource('%%{init: {"theme": "midnight"}}%%\n' + SOURCE)).toBeNull();
+  });
+
+  it('ignores a directive it cannot parse', () => {
+    expect(diagramColorsFromSource('%%{init: {theme: }}%%\n' + SOURCE)).toBeNull();
+  });
+});
+
+describe('resolveDiagramPalette', () => {
+  it("prefers the source's own directive over diagramTheme", () => {
+    expect(resolveDiagramPalette('%%{init: {"theme": "dark"}}%%\n' + SOURCE, 'dracula')).toEqual(
+      MERMAID_THEME_COLORS.dark
+    );
+  });
+
+  it('falls back to diagramTheme, then the default', () => {
+    expect(resolveDiagramPalette(SOURCE, 'dracula')).toEqual(DIAGRAM_THEMES.dracula);
+    expect(resolveDiagramPalette(SOURCE, undefined)).toEqual(DEFAULT_DIAGRAM_COLORS);
+  });
+});
+
+describe('toPeleWrapperStyleObject', () => {
+  it('camelCases property names and keeps custom properties as they are', () => {
+    expect(toPeleWrapperStyleObject({ bg: '#000000', fg: '#ffffff' })).toMatchObject({
+      '--pele-bg': '#000000',
+      background: 'var(--pele-bg)',
+      width: 'fit-content',
+      maxWidth: '100%',
+    });
+  });
+
+  it('keeps a value that itself contains a colon', () => {
+    expect(toPeleWrapperStyleObject({ fg: '#222', font: 'a:b' })['--pele-font']).toBe('a:b');
   });
 });

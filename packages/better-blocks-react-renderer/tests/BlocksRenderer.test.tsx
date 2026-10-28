@@ -1604,6 +1604,24 @@ describe('BlocksRenderer', () => {
     expect(wrapper.style.getPropertyValue('--pele-accent')).toBe('#ff0000');
   });
 
+  it('keeps the colors a mermaid %%{init}%% directive in the source asks for', async () => {
+    const content: BlocksContent = [
+      {
+        type: 'diagram',
+        format: 'mermaid',
+        value: '%%{init: {"theme": "forest"}}%%\ngraph TD\n  A-->B',
+        children: [{ type: 'text', text: '' }],
+      },
+    ];
+    const { container } = render(<BlocksRenderer content={content} diagramTheme="dracula" />);
+    await waitFor(() => {
+      expect(container.querySelector('div.mermaid-diagram')).toBeInTheDocument();
+    });
+    const wrapper = container.querySelector<HTMLElement>('div.mermaid-diagram')!;
+    expect(wrapper.style.getPropertyValue('--pele-surface')).toBe('#cde498');
+    expect(wrapper.style.getPropertyValue('--pele-border')).toBe('#13540c');
+  });
+
   it('restyles without re-rendering when the diagram theme changes', async () => {
     const content: BlocksContent = [
       {

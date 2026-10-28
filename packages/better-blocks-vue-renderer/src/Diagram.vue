@@ -15,11 +15,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-import {
-  DEFAULT_DIAGRAM_COLORS,
-  resolveDiagramColors,
-  toPeleWrapperStyle,
-} from '@qkix/better-blocks-core';
+import { resolveDiagramPalette, toPeleWrapperStyle } from '@qkix/better-blocks-core';
 
 import type { CustomBlocksConfig, DiagramNode, DiagramTheme } from './types';
 
@@ -38,9 +34,10 @@ const format = computed(() => props.node.format ?? 'mermaid');
 
 // Pele colors its SVG through `--pele-*` custom properties, so the theme is a
 // style on the wrapper: changing it restyles the diagram without re-rendering.
-// Without a theme, the shared default (mermaid.js's lavender look).
+// A `%%{init}%%` directive in the source wins, as it did under mermaid.js;
+// then `diagramTheme`; then the shared default (mermaid.js's lavender look).
 const wrapperStyle = computed(() =>
-  toPeleWrapperStyle(resolveDiagramColors(props.diagramTheme) ?? DEFAULT_DIAGRAM_COLORS)
+  toPeleWrapperStyle(resolveDiagramPalette(source.value, props.diagramTheme))
 );
 
 const svg = ref<string | null>(null);

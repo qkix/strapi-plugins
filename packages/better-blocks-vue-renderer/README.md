@@ -196,7 +196,51 @@ Diagrams use a palette that mirrors mermaid.js's familiar default (lavender node
 />
 ```
 
-The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. Changing `diagramTheme` restyles a diagram without rendering it again, and you can override any [Pele variable](https://pele.run/theming) from your own CSS. An `%%{init}%%` directive in a diagram's source no longer changes its colors. The same palettes and defaults apply in the React and Astro renderers.
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. Changing `diagramTheme` restyles a diagram without rendering it again, and you can override any [Pele variable](https://pele.run/theming) from your own CSS. The same palettes and defaults apply in the React and Astro renderers.
+
+A diagram's own source can still pick its colors the mermaid.js way, and that wins over `diagramTheme`, as it did under mermaid.js: an `%%{init}%%` directive naming one of mermaid's themes (`default`, `base`, `dark`, `forest`, `neutral`) and/or setting `themeVariables` (`background`, `primaryColor`, `primaryTextColor`, `primaryBorderColor`, `lineColor`, `textColor`, `mainBkg`, `nodeBorder`, `fontFamily`), or a frontmatter `config:` block naming a `theme`. Layout settings in a directive or frontmatter, such as `flowchart.curve` or `nodeSpacing`, are applied by Pele itself; some other mermaid settings, such as `fontSize`, have no effect.
+
+#### Upgrading from mermaid.js (before 0.3)
+
+Since 0.3, diagrams are drawn by Pele rather than mermaid.js. Existing content keeps working without changes:
+
+- Every diagram type mermaid supports still renders, and anything Pele cannot parse still falls back to the source in `<pre class="mermaid-source">`.
+- The `mermaid-diagram` / `mermaid-source` class names, the `diagramTheme` values and the default colors are unchanged, and colors set in a diagram's own `%%{init}%%` directive are honored (see [Diagram colors](#diagram-colors)).
+- What does change is the drawing itself: Pele has its own layout, so node positions, curves and spacing differ slightly from mermaid.js.
+
+If you need mermaid.js's exact output, render diagrams with it yourself through `blocks.diagram`. Install `mermaid` in your app, then:
+
+```vue
+<!-- MermaidJs.vue -->
+<script setup lang="ts">
+import { onMounted, ref, useId, watch } from 'vue';
+
+const props = defineProps<{ code: string; format: string }>();
+const id = `mermaid-${useId()}`.replace(/[^\w-]/g, '');
+const svg = ref<string | null>(null);
+
+async function draw() {
+  try {
+    const { default: mermaid } = await import('mermaid');
+    mermaid.initialize({ startOnLoad: false });
+    svg.value = (await mermaid.render(id, props.code)).svg;
+  } catch {
+    svg.value = null;
+  }
+}
+
+onMounted(draw);
+watch(() => props.code, draw);
+</script>
+
+<template>
+  <div v-if="svg" class="mermaid-diagram" v-html="svg"></div>
+  <pre v-else class="mermaid-source">{{ code }}</pre>
+</template>
+
+<!-- and where you render content: -->
+<BlocksRenderer :content="content" :blocks="{ diagram: markRaw(MermaidJs) }" />
+```
 
 ### Callouts (Admonitions)
 

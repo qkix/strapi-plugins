@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
 import {
-  DEFAULT_DIAGRAM_COLORS,
-  resolveDiagramColors,
-  toPeleWrapperStyle,
+  resolveDiagramPalette,
+  toPeleWrapperStyleObject,
   type DiagramTheme,
 } from '@qkix/better-blocks-core';
 
@@ -26,20 +25,6 @@ function loadPele() {
 // the same default prefix in every diagram, so each render gets its own.
 let renderCount = 0;
 
-// The shared wrapper style is CSS text; React wants an object with camelCased
-// names (custom properties keep theirs).
-function toReactStyle(cssText: string): CSSProperties {
-  return cssText.split(';').reduce<Record<string, string>>((style, declaration) => {
-    const at = declaration.indexOf(':');
-    const name = declaration.slice(0, at);
-    const key = name.startsWith('--')
-      ? name
-      : name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
-    style[key] = declaration.slice(at + 1);
-    return style;
-  }, {}) as CSSProperties;
-}
-
 /**
  * Renders a Mermaid diagram to inline SVG on the client.
  *
@@ -59,14 +44,15 @@ export function MermaidDiagram({
 
   // Pele colors its SVG through `--pele-*` custom properties, so the theme is a
   // style on the wrapper: changing it restyles the diagram without rendering
-  // it again. Without a theme, the shared default (mermaid.js's lavender look).
-  // Keyed on the theme's content, since an inline object is a new reference on
-  // every parent render.
+  // it again. A `%%{init}%%` directive in the source wins, as it did under
+  // mermaid.js; then `theme`; then the shared default (mermaid.js's lavender
+  // look). Keyed on the theme's content, since an inline object is a new
+  // reference on every parent render.
   const themeKey = typeof theme === 'object' ? JSON.stringify(theme) : (theme ?? '');
   const wrapperStyle = useMemo(
-    () => toReactStyle(toPeleWrapperStyle(resolveDiagramColors(theme) ?? DEFAULT_DIAGRAM_COLORS)),
+    () => toPeleWrapperStyleObject(resolveDiagramPalette(value, theme)) as CSSProperties,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [themeKey]
+    [value, themeKey]
   );
 
   useEffect(() => {
