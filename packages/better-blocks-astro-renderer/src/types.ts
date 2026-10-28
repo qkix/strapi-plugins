@@ -217,9 +217,13 @@ export type BlocksRendererProps = {
   /**
    * Renders `diagram` blocks with mermaid.js in the browser instead of to SVG
    * on the server. Off by default, because the server-rendered SVG is what
-   * keeps a page zero-JS; turn it on when diagrams must match mermaid.js's own
-   * layout and look rather than Pele's. Ignored when a custom `diagram`
-   * renderer is supplied via `blocks.diagram`.
+   * keeps a page zero-JS. Ignored when a custom `diagram` renderer is supplied
+   * via `blocks.diagram`.
+   *
+   * @deprecated Every renderer and the editor preview now draw diagrams with
+   * Pele, so this is the one place a diagram would look different. It still
+   * works, and will be removed in a future release. To use mermaid.js anyway,
+   * supply your own `diagram` renderer via `blocks.diagram`.
    */
   clientMermaid?: boolean;
   /**

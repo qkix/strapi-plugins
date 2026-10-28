@@ -2,8 +2,8 @@
  * What the components do once they are mounted in a browser.
  *
  * The rest of the suite renders on the server, which is where almost everything
- * happens. Four things cannot: Shiki cannot highlight synchronously, mermaid
- * measures text against a real DOM, a social widget script has to be fetched,
+ * happens. Four things cannot: Shiki cannot highlight synchronously, diagrams
+ * load their engine lazily after mount, a social widget script has to be fetched,
  * and a cross-origin download has to go through `fetch`. Those are here.
  */
 import { mount } from '@vue/test-utils';
@@ -11,19 +11,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import BlocksRenderer from '../src/BlocksRenderer.vue';
 import type { BlocksContent } from '../src/types';
-
-// mermaid is ~800 kB of layout code that needs real text metrics, which jsdom
-// does not have. Stub it with a renderer that echoes the source it was handed
-// into the markup, so the tests assert on what the component rendered rather
-// than on spy calls - and so the `%%{init}%%` theme directive is visible.
-const mermaidRender = vi.hoisted(() =>
-  vi.fn(async (_id: string, code: string) => ({
-    svg: `<svg class="mock-mermaid"><text>${code}</text></svg>`,
-  }))
-);
-vi.mock('mermaid', () => ({
-  default: { initialize: vi.fn(), render: mermaidRender },
-}));
 
 function mountContent(content: BlocksContent, props: Record<string, unknown> = {}) {
   return mount(BlocksRenderer, {
@@ -188,66 +175,106 @@ describe('file download buttons', () => {
 });
 
 describe('diagrams', () => {
+  // Pele, the real engine: it is pure TypeScript and needs no layout engine,
+  // so it renders in jsdom as it does in a browser.
   const diagram = (value: string): BlocksContent => [
     { type: 'diagram', format: 'mermaid', value, children: [{ type: 'text', text: '' }] },
   ];
+  const wrapperStyle = (wrapper: ReturnType<typeof mountContent>) =>
+    (wrapper.find('div.mermaid-diagram').element as HTMLElement).style;
 
   it('renders the SVG after mount, over the server-rendered source', async () => {
-    const wrapper = mountContent(diagram('graph TD\n  A-->B'));
+    const wrapper = mountContent(diagram('graph TD\n  A[Start]-->B[End]'));
 
     // The first render is the raw source - the same markup the server sent,
     // which is what makes hydration match.
     expect(wrapper.find('pre.mermaid-source').exists()).toBe(true);
 
     await vi.waitFor(() =>
-      expect(wrapper.find('div.mermaid-diagram svg.mock-mermaid').exists()).toBe(true)
+      expect(wrapper.find('div.mermaid-diagram svg.pele-flowchart').exists()).toBe(true)
     );
-    expect(wrapper.find('div.mermaid-diagram').text()).toContain('A-->B');
+    expect(wrapper.find('div.mermaid-diagram').text()).toContain('Start');
     expect(wrapper.find('pre.mermaid-source').exists()).toBe(false);
   });
 
-  it('hands mermaid the source unchanged when no theme is set', async () => {
-    mountContent(diagram('graph TD\n  A-->B'));
+  it('renders diagram types beyond flowcharts', async () => {
+    const wrapper = mountContent(diagram('gitGraph\n  commit\n  branch b\n  commit'));
 
-    await vi.waitFor(() => expect(mermaidRender).toHaveBeenCalled());
-    expect(mermaidRender.mock.calls[0][1]).toBe('graph TD\n  A-->B');
+    await vi.waitFor(() =>
+      expect(wrapper.find('div.mermaid-diagram svg.pele-gitGraph').exists()).toBe(true)
+    );
   });
 
-  it('applies a built-in theme as an init directive', async () => {
-    mountContent(diagram('graph TD\n  A-->B'), { diagramTheme: 'dracula' });
+  it('uses the default palette when no theme is set', async () => {
+    const wrapper = mountContent(diagram('graph TD\n  A-->B'));
 
-    await vi.waitFor(() => expect(mermaidRender).toHaveBeenCalled());
-    const source = mermaidRender.mock.calls[0][1];
-    expect(source).toContain('%%{init:');
-    expect(source).toContain('#282a36');
-    expect(source.endsWith('graph TD\n  A-->B')).toBe(true);
+    await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-surface')).toBe('#ececff');
+    expect(wrapperStyle(wrapper).background).toBe('var(--pele-bg)');
   });
 
-  it('applies a custom color palette as an init directive', async () => {
-    mountContent(diagram('graph TD\n  A-->B'), {
+  it('applies a built-in theme on the wrapper', async () => {
+    const wrapper = mountContent(diagram('graph TD\n  A-->B'), { diagramTheme: 'dracula' });
+
+    await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-bg')).toBe('#282a36');
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-accent')).toBe('#bd93f9');
+  });
+
+  it('applies a custom color palette on the wrapper', async () => {
+    const wrapper = mountContent(diagram('graph TD\n  A-->B'), {
       diagramTheme: { bg: '#ffffff', fg: '#222222', accent: '#ff0000' },
     });
 
-    await vi.waitFor(() => expect(mermaidRender).toHaveBeenCalled());
-    expect(mermaidRender.mock.calls[0][1]).toContain('#ff0000');
+    await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-accent')).toBe('#ff0000');
   });
 
-  it('keeps the raw source when mermaid cannot parse the diagram', async () => {
-    mermaidRender.mockRejectedValueOnce(new Error('Parse error'));
+  it('keeps the colors a mermaid %%{init}%% directive in the source asks for', async () => {
+    const wrapper = mountContent(diagram('%%{init: {"theme": "forest"}}%%\ngraph TD\n  A-->B'), {
+      diagramTheme: 'dracula',
+    });
 
-    const wrapper = mountContent(diagram('not a diagram'));
+    await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-surface')).toBe('#cde498');
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-border')).toBe('#13540c');
+  });
 
-    await vi.waitFor(() => expect(mermaidRender).toHaveBeenCalled());
-    expect(wrapper.find('pre.mermaid-source').text()).toBe('not a diagram');
+  it('restyles without re-rendering when the theme changes', async () => {
+    const wrapper = mountContent(diagram('graph TD\n  A-->B'), { diagramTheme: 'dracula' });
+    await vi.waitFor(() => expect(wrapper.find('div.mermaid-diagram').exists()).toBe(true));
+    const svgBefore = wrapper.find('div.mermaid-diagram svg').element;
+
+    await wrapper.setProps({ diagramTheme: 'nord' });
+
+    expect(wrapperStyle(wrapper).getPropertyValue('--pele-bg')).toBe('#2e3440');
+    expect(wrapper.find('div.mermaid-diagram svg').element).toBe(svgBefore);
+  });
+
+  it('keeps the raw source when the diagram fails to parse', async () => {
+    const wrapper = mountContent(diagram('graph TD\n  A -->'));
+
+    // Wait until the engine has actually loaded and rejected this source, so
+    // the assertion below is not just catching the pre-render fallback.
+    const { renderAsync } = await import('pele/lazy');
+    await expect(renderAsync('graph TD\n  A -->')).rejects.toThrow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(wrapper.find('pre.mermaid-source').text()).toBe('graph TD\n  A -->');
     expect(wrapper.find('div.mermaid-diagram').exists()).toBe(false);
   });
 
-  it('gives each diagram on the page its own render id', async () => {
-    mountContent([...diagram('graph TD\n  A-->B'), ...diagram('graph TD\n  C-->D')]);
+  it('gives each diagram on the page its own SVG id prefix', async () => {
+    const wrapper = mountContent([
+      ...diagram('graph LR\n  accTitle: First\n  A-->B'),
+      ...diagram('graph LR\n  accTitle: Second\n  C-->D'),
+    ]);
 
-    await vi.waitFor(() => expect(mermaidRender).toHaveBeenCalledTimes(2));
-    const [first, second] = mermaidRender.mock.calls.map((call) => call[0]);
-    expect(first).not.toBe(second);
+    await vi.waitFor(() =>
+      expect(wrapper.findAll('div.mermaid-diagram title[id]')).toHaveLength(2)
+    );
+    const ids = wrapper.findAll('div.mermaid-diagram title[id]').map((t) => t.element.id);
+    expect(new Set(ids).size).toBe(2);
   });
 
   it('leaves a custom diagram renderer alone', async () => {
@@ -261,6 +288,6 @@ describe('diagrams', () => {
     });
 
     await vi.waitFor(() => expect(wrapper.find('.custom-diagram').exists()).toBe(true));
-    expect(mermaidRender).not.toHaveBeenCalled();
+    expect(wrapper.find('div.mermaid-diagram').exists()).toBe(false);
   });
 });

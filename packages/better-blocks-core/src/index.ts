@@ -5,10 +5,15 @@ export { getAspectRatio } from './media';
 export {
   DEFAULT_DIAGRAM_COLORS,
   DIAGRAM_THEMES,
+  MERMAID_THEME_COLORS,
+  diagramColorsFromSource,
+  resolveDiagramPalette,
   applyDiagramTheme,
   resolveDiagramColors,
   toMermaidThemeVariables,
   toPeleThemeVariables,
+  toPeleWrapperStyle,
+  toPeleWrapperStyleObject,
 } from './diagram';
 export type { DiagramColors, DiagramTheme, DiagramThemeName } from './diagram';
 export { getBlockStyle } from './style';

@@ -3,6 +3,7 @@ import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import type {
   AnyBlockNode,
   AspectRatio,
+  DiagramTheme,
   AudioAlignment,
   AudioFile,
   AudioNode,
@@ -121,6 +122,15 @@ export type {
   VideoPlayer,
   VideoProvider,
 } from '@qkix/better-blocks-core';
+
+// ── Diagram Theming ──────────────────────────────────────────────────
+
+/**
+ * Diagram theming is shared with the Vue and Astro renderers and lives in
+ * `@qkix/better-blocks-core`. Re-exported so consumers keep importing every
+ * type from this package.
+ */
+export type { DiagramColors, DiagramTheme, DiagramThemeName } from '@qkix/better-blocks-core';
 
 // ── Modifier (Mark) Props ────────────────────────────────────────────
 
@@ -310,6 +320,14 @@ export type BlocksRendererProps = {
    * An unregistered block type renders nothing, exactly as before.
    */
   blockPlugins?: readonly BlockPlugin[];
+  /**
+   * Color theme for `diagram` (Mermaid) blocks - a built-in palette name or a
+   * custom color object. Applied as `--pele-*` CSS custom properties on the
+   * diagram's wrapper, together with the palette's background. Defaults to a
+   * palette that mirrors mermaid.js's default look. Ignored when a custom
+   * `diagram` renderer is supplied via `blocks.diagram`.
+   */
+  diagramTheme?: DiagramTheme;
   /**
    * Shiki theme for the default `code` block highlighting. Any bundled Shiki
    * theme name (e.g. `github-dark`, `github-light`, `dracula`, `nord`).

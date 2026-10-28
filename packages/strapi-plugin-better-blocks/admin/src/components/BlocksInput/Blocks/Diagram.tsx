@@ -3,7 +3,9 @@ import * as React from 'react';
 import {
   DEFAULT_DIAGRAM_COLORS,
   type DiagramColors,
+  diagramColorsFromSource,
   toPeleThemeVariables,
+  toPeleWrapperStyleObject,
 } from '@qkix/better-blocks-core';
 import { Typography } from '@strapi/design-system';
 import { useIntl } from 'react-intl';
@@ -145,7 +147,11 @@ const MermaidContent = ({
   // light one (primary500 is a deep blue that vanishes on the background), and
   // edges are a light grey. `bg` is what edge labels are masked with, so it is
   // the block's background either way.
+  //
+  // A `%%{init}%%` directive in the source wins over both, as it does on the
+  // published page, and brings its own background with it.
   const colors = theme?.colors as unknown as Record<string, string> | undefined;
+  const authored = diagramColorsFromSource(value);
   const palette: DiagramColors = isDark
     ? {
         bg: colors?.neutral100,
@@ -154,7 +160,11 @@ const MermaidContent = ({
         accent: colors?.primary600,
       }
     : { ...DEFAULT_DIAGRAM_COLORS, bg: colors?.neutral100 };
-  const themeVars = toPeleThemeVariables(palette) as React.CSSProperties;
+  const themeVars = (
+    authored
+      ? { ...toPeleWrapperStyleObject(authored), display: 'inline-block' }
+      : toPeleThemeVariables(palette)
+  ) as React.CSSProperties;
 
   if (error) {
     return (

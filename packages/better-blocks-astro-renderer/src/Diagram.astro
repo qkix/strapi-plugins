@@ -1,13 +1,13 @@
 ---
 import {
-  DEFAULT_DIAGRAM_COLORS,
   applyDiagramTheme,
-  resolveDiagramColors,
-  toPeleThemeVariables,
+  resolveDiagramPalette,
+  toPeleWrapperStyle,
 } from '@qkix/better-blocks-core';
 import { render as renderPele } from 'pele';
 import type { CustomBlocksConfig, DiagramNode, DiagramTheme } from './types';
 import MermaidScript from './MermaidScript.astro';
+import { warnOnce } from './deprecation';
 
 interface Props {
   node: DiagramNode;
@@ -22,25 +22,24 @@ const source = node.value ?? '';
 const format = node.format ?? 'mermaid';
 const DiagramComp = blocks?.diagram;
 
-// Without a theme, the shared default: mermaid.js's lavender look, which the
-// editor preview uses too. A theme name selects a built-in palette; an object
-// is used as custom colors.
-const colors = resolveDiagramColors(diagramTheme) ?? DEFAULT_DIAGRAM_COLORS;
+// A `%%{init}%%` directive in the source wins, as it did under mermaid.js, so
+// diagrams written for mermaid keep their author's colors. Otherwise
+// `diagramTheme` (a built-in palette name or custom colors), else the shared
+// default: mermaid.js's lavender look, which every renderer and the editor use.
+const colors = resolveDiagramPalette(source, diagramTheme);
+
+if (clientMermaid && !DiagramComp) {
+  warnOnce(
+    'clientMermaid',
+    '`clientMermaid` is deprecated and will be removed in a future release. Diagrams render ' +
+      'with Pele by default, as in the React and Vue renderers and the Strapi editor. To keep ' +
+      'mermaid.js, supply your own `diagram` renderer via `blocks.diagram` (see the README).'
+  );
+}
 
 // Pele colors its SVG through `--pele-*` custom properties, so the palette is
-// a style on the wrapper rather than part of the SVG. The SVG paints no
-// background of its own, so the wrapper carries that too - otherwise a dark
-// palette would sit on whatever the page is. The wrapper is sized to the SVG
-// so that background hugs the diagram instead of running across the column.
-const themeVars = toPeleThemeVariables(colors);
-const wrapperStyle = Object.entries(themeVars)
-  .map(([key, value]) => `${key}:${value}`)
-  .concat(
-    themeVars['--pele-bg']
-      ? ['background:var(--pele-bg)', 'width:fit-content', 'max-width:100%']
-      : []
-  )
-  .join(';');
+// a style on the wrapper rather than part of the SVG.
+const wrapperStyle = toPeleWrapperStyle(colors);
 
 // An `accTitle` becomes `<title id="pele-title">` plus `aria-labelledby`, under
 // the same default prefix in every diagram, so with two on one page the second

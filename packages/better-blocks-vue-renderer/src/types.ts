@@ -203,10 +203,10 @@ export type BlocksRendererProps = {
   blockPlugins?: readonly VueBlockPlugin[];
   /**
    * Color theme for `diagram` (Mermaid) blocks - a built-in palette name or a
-   * custom color object. Applied as a mermaid `%%{init}%%` directive, so a
-   * diagram whose source carries its own directive keeps that one. Defaults to
-   * mermaid.js's own theme. Ignored when a custom `diagram` renderer is
-   * supplied via `blocks.diagram`.
+   * custom color object. Applied as `--pele-*` CSS custom properties on the
+   * diagram's wrapper, together with the palette's background. Defaults to a
+   * palette that mirrors mermaid.js's default look. Ignored when a custom
+   * `diagram` renderer is supplied via `blocks.diagram`.
    */
   diagramTheme?: DiagramTheme;
   /**

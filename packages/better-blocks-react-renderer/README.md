@@ -90,11 +90,70 @@ import 'katex/dist/katex.min.css';
 
 ### Diagrams (Mermaid)
 
-Block-level `diagram` nodes (`format: 'mermaid'`) are rendered to inline SVG with [Mermaid](https://mermaid.js.org/) &mdash; flowcharts, sequence, class, state, ER, pie charts, and more.
+Block-level `diagram` nodes (`format: 'mermaid'`) are rendered to inline SVG with [Pele](https://pele.run), the same Mermaid engine the Astro renderer runs on the server and the Strapi editor previews with, so a diagram looks the same everywhere. Every diagram type built into [Mermaid](https://mermaid.js.org/) renders: flowcharts, sequence, class, state, ER, gantt, pie charts, mindmaps, gitGraph, and more. Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it.
 
-Unlike KaTeX, Mermaid needs a real browser DOM to measure text, so it cannot render synchronously on the server. The renderer keeps SSR/static export safe by emitting the raw Mermaid source inside a `<pre class="mermaid-source">` on the server and during the first client render (so hydration matches), then swapping in the rendered `<div class="mermaid-diagram">` SVG after mount. If Mermaid fails to parse the source, the raw text stays in place as a graceful fallback.
+Unlike KaTeX, diagrams render on the client. The renderer keeps SSR/static export safe by emitting the raw Mermaid source inside a `<pre class="mermaid-source">` on the server and during the first client render (so hydration matches), then swapping in the rendered `<div class="mermaid-diagram">` SVG after mount. If Pele fails to parse the source, the raw text stays in place as a graceful fallback.
 
-`mermaid` ships as a dependency and is **lazy-loaded** the first time a diagram renders, so it stays out of your server bundle and only downloads on pages that actually use a diagram &mdash; no setup or stylesheet import required.
+`pele` ships as a dependency and is **lazy-loaded** through `pele/lazy`, which fetches each diagram type's code the first time a diagram of that type renders. It stays out of your server bundle, a page without diagrams downloads none of it, and a page with a flowchart downloads only the flowchart (tens of kilobytes, where mermaid.js was about a megabyte) &mdash; no setup or stylesheet import required.
+
+#### Diagram colors
+
+Diagrams use a palette that mirrors mermaid.js's familiar default (lavender node fills, purple borders, dark edges). Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border, font, transparent }`):
+
+```tsx
+// built-in theme
+<BlocksRenderer content={blocks} diagramTheme="github-dark" />
+
+// or a custom palette
+<BlocksRenderer content={blocks} diagramTheme={{ bg: '#fff', fg: '#1f2328', accent: '#8250df' }} />
+```
+
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. Changing `diagramTheme` restyles a diagram without rendering it again, and you can override any [Pele variable](https://pele.run/theming) from your own CSS. The same palettes and defaults apply in the Vue and Astro renderers.
+
+A diagram's own source can still pick its colors the mermaid.js way, and that wins over `diagramTheme`, as it did under mermaid.js: an `%%{init}%%` directive naming one of mermaid's themes (`default`, `base`, `dark`, `forest`, `neutral`) and/or setting `themeVariables` (`background`, `primaryColor`, `primaryTextColor`, `primaryBorderColor`, `lineColor`, `textColor`, `mainBkg`, `nodeBorder`, `fontFamily`), or a frontmatter `config:` block naming a `theme`. Layout settings in a directive or frontmatter, such as `flowchart.curve` or `nodeSpacing`, are applied by Pele itself; some other mermaid settings, such as `fontSize`, have no effect.
+
+#### Upgrading from mermaid.js (before 0.19)
+
+Since 0.19, diagrams are drawn by Pele rather than mermaid.js. Existing content keeps working without changes:
+
+- Every diagram type mermaid supports still renders, and anything Pele cannot parse still falls back to the source in `<pre class="mermaid-source">`.
+- The `mermaid-diagram` / `mermaid-source` class names, the `diagramTheme` values and the default colors are unchanged, and colors set in a diagram's own `%%{init}%%` directive are honored (see [Diagram colors](#diagram-colors)).
+- What does change is the drawing itself: Pele has its own layout, so node positions, curves and spacing differ slightly from mermaid.js.
+
+If you need mermaid.js's exact output, render diagrams with it yourself through `blocks.diagram`. Install `mermaid` in your app, then:
+
+```tsx
+import { useEffect, useId, useState } from 'react';
+
+function MermaidJs({ code }: { code: string }) {
+  const id = useId().replace(/:/g, '');
+  const [svg, setSvg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    import('mermaid')
+      .then(({ default: mermaid }) => {
+        mermaid.initialize({ startOnLoad: false });
+        return mermaid.render(`mermaid-${id}`, code);
+      })
+      .then(({ svg }) => live && setSvg(svg))
+      .catch(() => live && setSvg(null));
+    return () => {
+      live = false;
+    };
+  }, [code, id]);
+
+  return svg ? (
+    <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: svg }} />
+  ) : (
+    <pre className="mermaid-source">{code}</pre>
+  );
+}
+
+<BlocksRenderer content={blocks} blocks={{ diagram: MermaidJs }} />;
+```
+
+#### Custom diagram renderer
 
 To render diagrams yourself (e.g. a different engine or custom theming), override the `diagram` block:
 

@@ -163,6 +163,151 @@ export function resolveDiagramColors(theme: DiagramTheme | undefined | null): Di
   return DIAGRAM_THEMES[theme as DiagramThemeName] ?? null;
 }
 
+// ── Mermaid directives in a diagram's own source ─────────────────────
+
+/**
+ * mermaid.js's built-in themes as palettes, from the values mermaid 11
+ * resolves for them. Diagrams written for mermaid.js pick one with
+ * `%%{init: {"theme": "dark"}}%%`; Pele ignores the directive, so this is
+ * what keeps such a diagram in the colors its author chose.
+ */
+export const MERMAID_THEME_COLORS: Record<
+  'default' | 'base' | 'dark' | 'forest' | 'neutral',
+  DiagramColors
+> = {
+  default: DEFAULT_DIAGRAM_COLORS,
+  base: {
+    bg: '#f4f4f4',
+    fg: '#333333',
+    line: '#0b0b0b',
+    surface: '#fff4dd',
+    border: 'hsl(40.59, 60%, 83.33%)',
+    accent: 'hsl(40.59, 60%, 83.33%)',
+  },
+  dark: {
+    bg: '#333333',
+    fg: '#cccccc',
+    line: '#d3d3d3',
+    surface: '#1f2020',
+    border: '#cccccc',
+    accent: '#cccccc',
+  },
+  forest: {
+    bg: '#ffffff',
+    fg: '#000000',
+    line: '#000000',
+    surface: '#cde498',
+    border: '#13540c',
+    accent: '#13540c',
+  },
+  neutral: {
+    bg: '#ffffff',
+    fg: '#000000',
+    line: '#666666',
+    surface: '#eeeeee',
+    border: '#999999',
+    accent: '#999999',
+  },
+};
+
+/**
+ * The mermaid `themeVariables` a palette can carry, and the key each sets.
+ * Where two set the same key, the later one is the more specific (node text
+ * over label text, node fill and border over the primary color) and wins.
+ */
+const THEME_VARIABLE_KEYS: [string, keyof DiagramColors][] = [
+  ['background', 'bg'],
+  ['textColor', 'fg'],
+  ['primaryTextColor', 'fg'],
+  ['lineColor', 'line'],
+  ['primaryColor', 'surface'],
+  ['mainBkg', 'surface'],
+  ['primaryBorderColor', 'border'],
+  ['nodeBorder', 'border'],
+  ['fontFamily', 'font'],
+];
+
+/**
+ * Parses the object in a `%%{init: …}%%` directive. mermaid accepts more than
+ * strict JSON there - single quotes, unquoted keys, trailing commas - and
+ * authors use all of it, so those are normalized first.
+ */
+function parseDirectiveObject(text: string): Record<string, unknown> | null {
+  const attempts = [
+    text,
+    text
+      .replace(/'/g, '"')
+      .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+      .replace(/,\s*([}\]])/g, '$1'),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const value: unknown = JSON.parse(attempt);
+      if (value && typeof value === 'object') return value as Record<string, unknown>;
+    } catch {
+      // Try the next normalization.
+    }
+  }
+  return null;
+}
+
+/**
+ * The palette a diagram's own source asks for, written the mermaid.js way: an
+ * `%%{init}%%` directive with a `theme` and/or `themeVariables`, or a
+ * frontmatter `config:` block naming a `theme`. Returns `null` when the source
+ * sets no colors, so the renderer's `diagramTheme` applies.
+ *
+ * `themeVariables` are applied on top of the named theme (mermaid's `default`
+ * when none is named), mapped onto the palette keys Pele understands.
+ */
+export function diagramColorsFromSource(source: string): DiagramColors | null {
+  let theme: string | undefined;
+  let variables: Record<string, unknown> | undefined;
+
+  const directive = source.match(/%%\{\s*init(?:ialize)?\s*:\s*([\s\S]*?)\}%%/i);
+  if (directive) {
+    const config = parseDirectiveObject(directive[1]);
+    if (config) {
+      if (typeof config.theme === 'string') theme = config.theme;
+      if (config.themeVariables && typeof config.themeVariables === 'object') {
+        variables = config.themeVariables as Record<string, unknown>;
+      }
+    }
+  } else {
+    const frontmatter = source.match(/^\s*---\s*\n([\s\S]*?)\n\s*---/);
+    const named = frontmatter?.[1].match(/^\s+theme:\s*['"]?([\w-]+)/m);
+    if (named) theme = named[1];
+  }
+
+  if (theme === undefined && variables === undefined) return null;
+
+  const base = MERMAID_THEME_COLORS[(theme ?? 'default') as keyof typeof MERMAID_THEME_COLORS];
+  if (!base && variables === undefined) return null;
+
+  const colors: DiagramColors = { ...(base ?? DEFAULT_DIAGRAM_COLORS) };
+  for (const [variable, key] of THEME_VARIABLE_KEYS) {
+    const value = variables?.[variable];
+    if (typeof value === 'string' && value.trim() !== '') {
+      (colors as Record<string, unknown>)[key] = value;
+      // mermaid's node border doubles as the accent the palettes here use.
+      if (key === 'border') colors.accent = value;
+    }
+  }
+  return colors;
+}
+
+/**
+ * The palette a diagram renders with: what its own source asks for, else the
+ * renderer's `diagramTheme`, else the shared default. The source wins because
+ * it is the more specific intent - the same rule mermaid.js applied.
+ */
+export function resolveDiagramPalette(
+  source: string,
+  theme: DiagramTheme | undefined | null
+): DiagramColors {
+  return diagramColorsFromSource(source) ?? resolveDiagramColors(theme) ?? DEFAULT_DIAGRAM_COLORS;
+}
+
 /**
  * Maps a palette onto mermaid's `themeVariables`. Only the keys a palette
  * actually sets are emitted - mermaid derives the rest of its (large) variable
@@ -225,6 +370,42 @@ export function toPeleThemeVariables(colors: DiagramColors): Record<string, stri
   set('font', colors.font);
 
   return vars;
+}
+
+/**
+ * The inline style for the element that wraps a Pele SVG, as CSS text: the
+ * palette's `--pele-*` properties, plus the background. Pele's SVG paints no
+ * background of its own, so without this a dark palette would sit on whatever
+ * the page is; the wrapper is sized to the SVG so that background hugs the
+ * diagram instead of running across the column, and `max-width` lets a wide
+ * diagram still shrink to fit.
+ */
+export function toPeleWrapperStyle(colors: DiagramColors): string {
+  const vars = toPeleThemeVariables(colors);
+  return Object.entries(vars)
+    .map(([key, value]) => `${key}:${value}`)
+    .concat(
+      vars['--pele-bg'] ? ['background:var(--pele-bg)', 'width:fit-content', 'max-width:100%'] : []
+    )
+    .join(';');
+}
+
+/**
+ * `toPeleWrapperStyle` as a style object, for frameworks that take one
+ * (React): property names camelCased, custom properties as they are.
+ */
+export function toPeleWrapperStyleObject(colors: DiagramColors): Record<string, string> {
+  const style: Record<string, string> = {};
+  for (const declaration of toPeleWrapperStyle(colors).split(';')) {
+    const at = declaration.indexOf(':');
+    if (at < 1) continue;
+    const name = declaration.slice(0, at);
+    const key = name.startsWith('--')
+      ? name
+      : name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+    style[key] = declaration.slice(at + 1);
+  }
+  return style;
 }
 
 /**

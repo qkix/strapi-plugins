@@ -1,8 +1,9 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { parseHTML } from 'linkedom';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 
 import BlocksRenderer from '../src/BlocksRenderer.astro';
+import { resetWarnings } from '../src/deprecation';
 import type {
   BlocksContent,
   CustomBlocksConfig,
@@ -1123,6 +1124,45 @@ describe('BlocksRenderer', () => {
     );
     const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
     expect(style.toLowerCase()).toContain('--pele-accent:#ff0000');
+  });
+
+  it('keeps the colors a mermaid %%{init}%% directive in the source asks for', async () => {
+    // Diagrams written for mermaid.js chose their colors this way; the
+    // directive wins over diagramTheme, as it did under mermaid.js.
+    const { container } = await render(
+      [
+        {
+          type: 'diagram',
+          format: 'mermaid',
+          value: '%%{init: {"theme": "forest"}}%%\ngraph TD\n  A[Start] --> B[End];',
+          children: [{ type: 'text', text: '' }],
+        },
+      ],
+      { diagramTheme: 'dracula' }
+    );
+    const style = container.querySelector('div.mermaid-diagram')?.getAttribute('style') ?? '';
+    expect(style).toContain('--pele-surface:#cde498');
+    expect(style).toContain('--pele-border:#13540c');
+    expect(style).not.toContain('#282a36');
+  });
+
+  it('warns once that clientMermaid is deprecated', async () => {
+    resetWarnings();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const diagram = {
+      type: 'diagram',
+      format: 'mermaid',
+      value: 'graph TD\n  A --> B;',
+      children: [{ type: 'text', text: '' }],
+    };
+    await render([diagram, diagram] as never, { clientMermaid: true });
+    await render([diagram] as never, { clientMermaid: true });
+    const notices = warn.mock.calls.filter(([message]) =>
+      String(message).includes('clientMermaid')
+    );
+    expect(notices).toHaveLength(1);
+    expect(String(notices[0][0])).toContain('deprecated');
+    warn.mockRestore();
   });
 
   it('derives node fills for a palette that only sets bg and fg', async () => {

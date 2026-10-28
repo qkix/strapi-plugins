@@ -1028,10 +1028,10 @@ describe('BlocksRenderer', () => {
   // ── Diagrams (Mermaid) ───────────────────────────────────────────
 
   it('renders the raw diagram source in a <pre> on the server', async () => {
-    // mermaid measures text against a real DOM, so a diagram cannot be rendered
-    // server-side. The source is what the server ships and what the first
-    // client render repeats, which is what makes hydration match; the SVG is
-    // swapped in after mount (see client.test.ts).
+    // The diagram engine is loaded lazily on the client, so the source is what
+    // the server ships and what the first client render repeats, which is
+    // what makes hydration match; the SVG is swapped in after mount (see
+    // client.test.ts).
     const { container } = await render([
       {
         type: 'diagram',
@@ -1047,7 +1047,7 @@ describe('BlocksRenderer', () => {
     expect(container.querySelector('svg')).toBeNull();
   });
 
-  it('ships the source for diagram types no engine renders either', async () => {
+  it('ships the source on the server for every diagram type', async () => {
     const { container } = await render([
       {
         type: 'diagram',
@@ -1061,10 +1061,9 @@ describe('BlocksRenderer', () => {
     expect(pre?.textContent).toContain('gantt');
   });
 
-  it('leaves the server-rendered source unthemed, directive and all', async () => {
-    // The theme is applied at render time on the client, not baked into the
-    // markup the server sends - otherwise the two would have to agree byte for
-    // byte for hydration to match.
+  it('leaves the server-rendered source unthemed', async () => {
+    // The theme is a style on the client-rendered wrapper, not part of the
+    // source - no `%%{init}%%` directive is added to what the server sends.
     const { container } = await render(
       [
         {

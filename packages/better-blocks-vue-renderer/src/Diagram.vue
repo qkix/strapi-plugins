@@ -1,25 +1,25 @@
 <script setup lang="ts">
 /**
- * A Mermaid diagram, rendered to inline SVG by mermaid.js on the client.
+ * A Mermaid diagram, rendered to inline SVG by Pele on the client - the same
+ * engine the Astro renderer runs on the server and the editor previews with,
+ * so a diagram looks the same everywhere.
  *
- * mermaid needs a real DOM to measure text, so unlike KaTeX it cannot render
- * during SSR. The server and the first client render both emit the raw source
- * in a `<pre>` - so hydration matches - and the SVG is swapped in after mount.
- * This mirrors the React renderer, and it is what makes the output match
- * mermaid.js exactly: rendering to SVG on the server needs a reimplementation
- * of mermaid's layout, which disagreed with the real thing on, among others,
- * flowcharts containing a cycle and the closing actor row of sequence diagrams.
+ * The server and the first client render both emit the raw source in a
+ * `<pre>` - so hydration matches - and the SVG is swapped in after mount. Pele
+ * could render during SSR, but only through its synchronous build, which
+ * carries every diagram type; loading it lazily on the client keeps it off
+ * pages without diagrams and loads only the types a page uses.
  *
- * If mermaid fails to parse the diagram the raw source simply stays put, so
+ * If Pele fails to parse the diagram the raw source simply stays put, so
  * content is never lost.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-import { applyDiagramTheme } from '@qkix/better-blocks-core';
+import { resolveDiagramPalette, toPeleWrapperStyle } from '@qkix/better-blocks-core';
 
 import type { CustomBlocksConfig, DiagramNode, DiagramTheme } from './types';
 
-import { loadMermaid, nextDiagramId } from './mermaid';
+import { loadPele, nextIdPrefix } from './pele';
 import { rawComponent } from './utils';
 
 const props = defineProps<{
@@ -32,13 +32,12 @@ const DiagramComp = computed(() => rawComponent(props.blocks?.diagram));
 const source = computed(() => props.node.value ?? '');
 const format = computed(() => props.node.format ?? 'mermaid');
 
-// Identity of the theme as a plain string. Watching the prop itself would
-// re-render on every parent update for the very common `:diagram-theme="{ … }"`
-// inline object, which is a new reference each time.
-const themeKey = computed(() =>
-  props.diagramTheme == null || typeof props.diagramTheme === 'string'
-    ? (props.diagramTheme ?? '')
-    : JSON.stringify(props.diagramTheme)
+// Pele colors its SVG through `--pele-*` custom properties, so the theme is a
+// style on the wrapper: changing it restyles the diagram without re-rendering.
+// A `%%{init}%%` directive in the source wins, as it did under mermaid.js;
+// then `diagramTheme`; then the shared default (mermaid.js's lavender look).
+const wrapperStyle = computed(() =>
+  toPeleWrapperStyle(resolveDiagramPalette(source.value, props.diagramTheme))
 );
 
 const svg = ref<string | null>(null);
@@ -54,12 +53,8 @@ async function renderDiagram() {
   if (DiagramComp.value || !source.value) return;
 
   try {
-    const mermaid = await loadMermaid();
-    // The theme rides along in an `%%{init}%%` directive rather than through
-    // `mermaid.initialize`, whose config is global and shared by every diagram
-    // on the page.
-    const themed = applyDiagramTheme(source.value, props.diagramTheme);
-    const { svg: rendered } = await mermaid.render(nextDiagramId(), themed);
+    const { renderAsync } = await loadPele();
+    const { svg: rendered } = await renderAsync(source.value, { idPrefix: nextIdPrefix() });
     if (token === generation) svg.value = rendered;
   } catch {
     // Leave the raw-source fallback in place on parse/render errors.
@@ -67,7 +62,7 @@ async function renderDiagram() {
 }
 
 onMounted(renderDiagram);
-watch([source, themeKey], renderDiagram);
+watch(source, renderDiagram);
 onBeforeUnmount(() => {
   generation++;
 });
@@ -75,6 +70,6 @@ onBeforeUnmount(() => {
 
 <template>
   <component :is="DiagramComp" v-if="DiagramComp" :code="source" :format="format" />
-  <div v-else-if="svg" class="mermaid-diagram" v-html="svg"></div>
+  <div v-else-if="svg" class="mermaid-diagram" :style="wrapperStyle" v-html="svg"></div>
   <pre v-else class="mermaid-source">{{ source }}</pre>
 </template>

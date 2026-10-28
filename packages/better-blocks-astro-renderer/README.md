@@ -119,13 +119,13 @@ import 'katex/dist/katex.min.css';
 
 Every diagram type built into Mermaid renders (flowchart, sequence, state, class, ER, gantt, pie, mindmap, gitGraph, xychart, …) to a `<div class="mermaid-diagram">` wrapping the generated SVG. A source that fails to parse falls back gracefully to the raw definition in a `<pre class="mermaid-source">`, so content is never lost.
 
-Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it. If you need mermaid.js's exact output, see [`clientMermaid`](#rendering-with-mermaidjs-instead-clientmermaid).
+Pele follows Mermaid's syntax but has its own layout and visual style, so a diagram is laid out a little differently than mermaid.js draws it. The React and Vue renderers and the Strapi editor preview use Pele too, so a diagram looks the same everywhere.
 
 `pele` ships as a dependency of this package, so no extra install or stylesheet is required.
 
 #### Diagram colors
 
-Diagrams render **in color** by default, with a palette that mirrors mermaid.js's familiar look (lavender node fills, purple borders, dark edges). Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border }`):
+Diagrams render **in color** by default, with a palette that mirrors mermaid.js's familiar look (lavender node fills, purple borders, dark edges). Pass `diagramTheme` to pick a built-in palette (`github-light`, `github-dark`, `dracula`, `nord`, `tokyo-night`, `catppuccin-mocha`, `solarized-light`, …) or a custom color object (`{ bg, fg, line, accent, muted, surface, border, font, transparent }`):
 
 ```astro
 ---
@@ -140,9 +140,13 @@ const { blocks } = Astro.props;
 <BlocksRenderer content={blocks} diagramTheme={{ bg: '#fff', fg: '#1f2328', accent: '#8250df' }} />
 ```
 
-The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. You can also override any [Pele variable](https://pele.run/theming) from your own CSS.
+The palette is applied as `--pele-*` CSS custom properties on the `<div class="mermaid-diagram">`, which also takes the palette's `bg` as its background, sized to the diagram. Colors a palette leaves out are derived from the rest: node fills and borders are mixed from `bg` and `fg`, so a two-color palette like `zinc-dark` stays legible. You can also override any [Pele variable](https://pele.run/theming) from your own CSS. The same palettes and defaults apply in the React and Vue renderers.
 
-#### Rendering with mermaid.js instead (`clientMermaid`)
+A diagram's own source can still pick its colors the mermaid.js way, and that wins over `diagramTheme`, as it did under mermaid.js: an `%%{init}%%` directive naming one of mermaid's themes (`default`, `base`, `dark`, `forest`, `neutral`) and/or setting `themeVariables` (`background`, `primaryColor`, `primaryTextColor`, `primaryBorderColor`, `lineColor`, `textColor`, `mainBkg`, `nodeBorder`, `fontFamily`), or a frontmatter `config:` block naming a `theme`. Layout settings in a directive or frontmatter, such as `flowchart.curve` or `nodeSpacing`, are applied by Pele itself; some other mermaid settings, such as `fontSize`, have no effect.
+
+#### Rendering with mermaid.js instead (`clientMermaid`, deprecated)
+
+> **Deprecated.** Every renderer and the editor preview now draw diagrams with Pele, so `clientMermaid` is the one place a diagram would look different from the rest. It still works, and will be removed in a future release. If you need mermaid.js, supply your own `diagram` renderer via `blocks.diagram` instead - see [the recipe](#upgrading-from-beautiful-mermaid-or-clientmermaid-before-016).
 
 Set `clientMermaid` to render diagrams with mermaid.js in the browser instead, for mermaid's own layout and look:
 
@@ -158,7 +162,36 @@ This is **off by default on purpose**: the whole point of the server-rendered SV
 
 > To take full control of the markup, override the `diagram` block via `blocks.diagram` - it wins over `clientMermaid`.
 
-> Before 0.16, diagrams were server-rendered with `beautiful-mermaid`, a reimplementation of mermaid's layout that drew flowcharts containing a cycle in the wrong order, omitted the closing actor row of sequence diagrams, and fell back to the `<pre>` for gantt, pie, mindmap and gitGraph. Pele renders all of those correctly. Diagrams now look slightly different; the `diagramTheme` values and the `mermaid-diagram` / `mermaid-source` class names are unchanged.
+#### Upgrading from `beautiful-mermaid` or `clientMermaid` (before 0.16)
+
+Since 0.16, diagrams are drawn on the server by Pele rather than `beautiful-mermaid`. Existing content keeps working without changes:
+
+- Every diagram type mermaid supports renders, and anything Pele cannot parse still falls back to the source in `<pre class="mermaid-source">`.
+- The `mermaid-diagram` / `mermaid-source` class names, the `diagramTheme` values and the default colors are unchanged, and colors set in a diagram's own `%%{init}%%` directive are honored (see [Diagram colors](#diagram-colors)).
+- What does change is the drawing itself: Pele has its own layout, so node positions, curves and spacing differ from before.
+- Before 0.16 diagrams were server-rendered with `beautiful-mermaid`, which drew flowcharts containing a cycle in the wrong order, omitted the closing actor row of sequence diagrams, and fell back to the `<pre>` for gantt, pie, mindmap and gitGraph. Pele renders all of those correctly.
+- `clientMermaid` still works but is deprecated: it logs a one-time warning during the build and will be removed in a future release. The recipe below replaces it.
+
+If you need mermaid.js's exact output, render diagrams with it yourself through `blocks.diagram`. Install `mermaid` in your app, then:
+
+```astro
+---
+// src/components/MermaidJs.astro
+const { code } = Astro.props;
+---
+
+<pre class="mermaid">{code}</pre>
+
+<script>
+  import mermaid from 'mermaid';
+
+  mermaid.initialize({ startOnLoad: false });
+  await mermaid.run({ querySelector: 'pre.mermaid' });
+</script>
+
+<!-- and where you render content: -->
+<BlocksRenderer content={blocks} blocks={{ diagram: MermaidJs }} />
+```
 
 ### Callouts (Admonitions)
 

@@ -49,6 +49,7 @@ import type {
   CustomModifiersConfig,
   DetailsNode,
   DiagramNode,
+  DiagramTheme,
   EmbedNode,
   HeadingNode,
   HorizontalLineNode,
@@ -341,6 +342,7 @@ function isHeaderRow(row: TableRowNode | undefined): boolean {
 type RenderOptions = {
   codeTheme: string;
   codeCopyButton: boolean;
+  diagramTheme?: DiagramTheme;
   /**
    * Registered block types, keyed by type. Carried in the options rather than
    * as another parameter so nesting blocks - callout, details - thread it to
@@ -430,7 +432,7 @@ function renderBlock(
     case 'math':
       return renderMath(builtIn, key, blocks);
     case 'diagram':
-      return renderDiagram(builtIn, key, blocks);
+      return renderDiagram(builtIn, key, blocks, options);
     case 'callout':
       return renderCallout(builtIn, key, blocks, modifiers, options);
     case 'details':
@@ -900,7 +902,12 @@ function renderAudio(block: AudioNode, key: number, blocks?: CustomBlocksConfig)
 
 // ── Diagram (Mermaid) Rendering ──────────────────────────────────────
 
-function renderDiagram(block: DiagramNode, key: number, blocks?: CustomBlocksConfig): ReactNode {
+function renderDiagram(
+  block: DiagramNode,
+  key: number,
+  blocks?: CustomBlocksConfig,
+  options?: RenderOptions
+): ReactNode {
   const DiagramComp = blocks?.diagram;
   const code = block.value ?? '';
 
@@ -908,7 +915,7 @@ function renderDiagram(block: DiagramNode, key: number, blocks?: CustomBlocksCon
     return <DiagramComp key={key} code={code} format={block.format} />;
   }
 
-  return <MermaidDiagram key={key} value={code} />;
+  return <MermaidDiagram key={key} value={code} theme={options?.diagramTheme} />;
 }
 
 // ── Callout (Admonition) Rendering ───────────────────────────────────
@@ -1265,6 +1272,7 @@ export function BlocksRenderer({
   blocks,
   modifiers,
   blockPlugins,
+  diagramTheme,
   codeTheme = DEFAULT_CODE_THEME,
   codeCopyButton = false,
 }: BlocksRendererProps): ReactNode {
@@ -1284,6 +1292,7 @@ export function BlocksRenderer({
   const options: RenderOptions = {
     codeTheme,
     codeCopyButton,
+    diagramTheme,
     plugins: blockPlugins?.length
       ? new Map(blockPlugins.map((plugin) => [plugin.type, plugin]))
       : undefined,
