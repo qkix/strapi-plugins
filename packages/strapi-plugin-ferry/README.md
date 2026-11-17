@@ -171,6 +171,13 @@ CSV carries flat fields and relation keys. Components and dynamic zones are left
 out, and the export says which ones by name rather than writing a JSON blob into
 a spreadsheet cell that no one can edit. Use JSON when you want everything.
 
+Rich text (**Blocks**) and **JSON** fields are the exception: they are single
+fields, so they travel in their cell as JSON and come back intact. A cell that
+cannot be read as the field's type - text in a number column, or the
+`[object Object]` that Ferry before 0.2.4 wrote for a Blocks field - is not
+used. The field keeps its current value, and the dry run names the column and
+rows.
+
 One rule worth knowing: **a blank cell means "leave this alone"**, not "empty
 this field". CSV cannot tell the two apart, and the safe reading is the one that
 does not let a spreadsheet quietly erase content that simply was not in it.

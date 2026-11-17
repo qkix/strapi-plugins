@@ -13,6 +13,7 @@ import {
   service,
   wipe,
 } from './helpers';
+import { encode } from '../server/src/services/csv';
 import { parseFile } from '../server/src/services/parse';
 import type { Report } from '../server/src/types';
 
@@ -316,6 +317,44 @@ describe('csv', () => {
     const [article] = await articles();
     expect(article.title).toBe('Renamed');
     expect(article.body).toBe('Keep me');
+  });
+
+  it('19a. reads a Blocks field from a cell of JSON', async () => {
+    const content = [{ type: 'paragraph', children: [{ type: 'text', text: 'From, CSV' }] }];
+
+    await csvApply(
+      encode(
+        [{ documentId: 'ferrycsvblocks00001', title: 'Rich', content: content }],
+        ['documentId', 'title', 'content']
+      )
+    );
+
+    const [article] = await articles();
+    expect(article.content).toEqual(content);
+  });
+
+  it('19b. refuses an unreadable Blocks cell, keeps the field and says so', async () => {
+    // Issue 197: files written before the fix hold `[object Object]`, and
+    // importing one emptied the field with a clean dry run.
+    const content = [{ type: 'paragraph', children: [{ type: 'text', text: 'Keep me' }] }];
+    await apply([{ documentId: 'ferrycsvblocks00002', title: 'Rich', content }]);
+
+    const text =
+      'documentId,title,content\r\nferrycsvblocks00002,Renamed,"[object Object],[object Object]"\r\n';
+
+    const report = await service(strapi, 'importer').preview(
+      { uid: ARTICLE },
+      parseFile(text, 'csv', plan(ARTICLE))
+    );
+    expect(report.warnings.join(' ')).toContain(
+      'Column content could not be read as blocks in row 1'
+    );
+
+    await csvApply(text);
+
+    const [article] = await articles();
+    expect(article.title).toBe('Renamed');
+    expect(article.content).toEqual(content);
   });
 
   it('20. says which columns it did not recognise', async () => {

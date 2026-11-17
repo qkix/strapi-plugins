@@ -30,6 +30,7 @@ export const PLUGIN_PATH = fileURLToPath(new URL('..', import.meta.url));
  *   a dynamic zone            article.blocks, one edge per member, order is content
  *   a single type             homepage, which has no documentId to match on
  *   a media field             article.cover, carried as a reference and not bytes
+ *   a Blocks field            article.content, an array that is not a relation
  */
 export const bootWithFerry = (
   options: Parameters<typeof createTestStrapi>[0] = {}
@@ -45,6 +46,9 @@ export const bootWithFerry = (
           views: { type: 'integer' },
           featured: { type: 'boolean' },
           meta: { type: 'json' },
+          // Rich text: a list of nodes, which CSV has to carry as JSON rather
+          // than as a list of keys the way it carries a to-many relation.
+          content: { type: 'blocks' },
           secret: { type: 'password' },
           author: {
             type: 'relation',

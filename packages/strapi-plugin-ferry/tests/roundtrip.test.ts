@@ -43,6 +43,15 @@ const importInto = (
     parseFile(body, format, service(strapi, 'schema').plan(uid))
   );
 
+const CONTENT = [
+  { type: 'paragraph', children: [{ type: 'text', text: 'Rich, with a "quote"' }] },
+  {
+    type: 'list',
+    format: 'unordered',
+    children: [{ type: 'list-item', children: [{ type: 'text', text: 'one' }] }],
+  },
+];
+
 /** The content the round trip has to survive, built once. */
 const seed = async () => {
   const ada = await strapi.documents(AUTHOR).create({
@@ -80,6 +89,7 @@ const seed = async () => {
       views: 42,
       featured: true,
       meta: { nested: { deep: true }, list: [1, 2, 3] },
+      content: CONTENT,
       author: ada.documentId,
       tags: [beta.documentId, alpha.documentId],
       seo: {
@@ -211,6 +221,13 @@ describe('out and back as a spreadsheet', () => {
     await importInto(ARTICLE, before.body, 'csv');
 
     expect((await exportOf(ARTICLE, 'csv')).body).toBe(before.body);
+
+    // Byte-identical would also hold if both exports were wrong the same way,
+    // which is exactly how issue 197 got through: check the content itself.
+    const article = await strapi.documents(ARTICLE).findOne({
+      documentId: 'ferryarticleone000001',
+    });
+    expect(article.content).toEqual(CONTENT);
   });
 
   it('6. leaves the fields CSV cannot carry exactly as they were', async () => {

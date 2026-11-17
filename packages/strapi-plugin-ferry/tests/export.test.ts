@@ -13,7 +13,19 @@ import {
   fakeUpload,
   service,
 } from './helpers';
+import { decode } from '../server/src/services/csv';
 import type { Archive } from '../server/src/types';
+
+const CONTENT = [
+  { type: 'heading', level: 2, children: [{ type: 'text', text: 'A heading, with a comma' }] },
+  {
+    type: 'paragraph',
+    children: [
+      { type: 'text', text: 'Some ' },
+      { type: 'text', text: '"bold"', bold: true },
+    ],
+  },
+];
 
 let app: TestStrapiInstance;
 let strapi: any;
@@ -56,6 +68,7 @@ beforeAll(async () => {
       views: 42,
       featured: true,
       meta: { source: 'test' },
+      content: CONTENT,
       secret: 'not-for-export',
       author: author.documentId,
       // Deliberately out of order, to prove the export sorts them.
@@ -255,6 +268,18 @@ describe('csv', () => {
     const result = await run({ uid: ARTICLE, format: 'csv' });
 
     expect(result.body).toContain(`"${[tagOne.documentId, tagTwo.documentId].sort().join(',')}"`);
+  });
+
+  it('20a. writes a Blocks field as JSON, not as [object Object]', async () => {
+    // Issue 197: an array that is not a relation was joined like one, and the
+    // cell came out as `[object Object]`.
+    const result = await run({ uid: ARTICLE, format: 'csv' });
+    const row = decode(result.body).rows.find(
+      (candidate) => candidate.documentId === 'ferryarticleone000001'
+    );
+
+    expect(result.body).not.toContain('[object Object]');
+    expect(JSON.parse(row!.content)).toEqual(CONTENT);
   });
 });
 
