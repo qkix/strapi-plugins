@@ -15,11 +15,13 @@ import {
   Play,
   CaretDown,
 } from '@strapi/icons';
+import { Portal } from '@strapi/design-system';
 import { Editor, Range, Transforms } from 'slate';
 import { ReactEditor, useSlate } from 'slate-react';
 import { styled } from 'styled-components';
 
 import { useBlocksEditorContext } from './BlocksEditor';
+import { MENU_WIDTH, type Placement, placeAt } from './utils/menuPlacement';
 import { insertCallout, VARIANTS, VARIANT_ORDER } from './Blocks/Callout';
 import { insertDetails } from './Blocks/Details';
 import { insertEmbed } from './Blocks/Embed';
@@ -203,16 +205,21 @@ const COMMANDS: SlashCommand[] = [
  * Styled components
  * -------------------------------------------------------------------------*/
 
+/**
+ * Fixed and portalled, for the same reason as the floating selection toolbar.
+ * Positioned absolutely inside the editor it was clipped by the content area,
+ * which is a scroll container - in a short document only the first entry was
+ * visible below the last line (#203).
+ */
 const MenuWrapper = styled.div`
-  position: absolute;
+  position: fixed;
   z-index: 10;
   background: ${({ theme }) => theme.colors.neutral0};
   border: 1px solid ${({ theme }) => theme.colors.neutral200};
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.shadows.filterShadow};
-  max-height: 260px;
   overflow-y: auto;
-  width: 220px;
+  width: ${MENU_WIDTH}px;
   padding: 4px;
 `;
 
@@ -256,8 +263,23 @@ const SlashCommandMenu = () => {
   const [show, setShow] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
-  const [position, setPosition] = React.useState({ top: 0, left: 0 });
+  const [placement, setPlacement] = React.useState<Placement | null>(null);
   const menuRef = React.useRef<HTMLDivElement>(null);
+
+  /** Re-measures from the caret, so the menu stays with the line it belongs to. */
+  const measure = React.useCallback(() => {
+    const { selection } = editor;
+    if (!selection) return;
+    try {
+      const rect = ReactEditor.toDOMRange(
+        editor as ReactEditor,
+        selection
+      ).getBoundingClientRect();
+      setPlacement(placeAt(rect));
+    } catch {
+      // The DOM range can be briefly invalid mid-transform; keep the last spot.
+    }
+  }, [editor]);
 
   // Blocks other packages registered are appended after the built-ins, so the
   // list the user already knows keeps its order.
@@ -314,27 +336,34 @@ const SlashCommandMenu = () => {
       setSearch(text.slice(1));
       setShow(true);
       setActiveIndex(0);
-
-      // Position the menu
-      try {
-        const domRange = ReactEditor.toDOMRange(
-          editor as ReactEditor,
-          selection
-        );
-        const rect = domRange.getBoundingClientRect();
-        const editorEl = ReactEditor.toDOMNode(editor as ReactEditor, editor);
-        const editorRect = editorEl.getBoundingClientRect();
-        setPosition({
-          top: rect.bottom - editorRect.top + 4,
-          left: rect.left - editorRect.left,
-        });
-      } catch {
-        // DOM range might be invalid
-      }
+      measure();
     } else {
       setShow(false);
     }
-  }, [editor.selection, editor.children]);
+  }, [editor.selection, editor.children, measure]);
+
+  // Fixed positioning does not move with scrolling, so follow the caret while
+  // the menu is open: the page, the editor's own content area and fullscreen
+  // mode all scroll independently. Capture phase, because scroll does not
+  // bubble.
+  React.useEffect(() => {
+    if (!show) return;
+    window.addEventListener('scroll', measure, true);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('scroll', measure, true);
+      window.removeEventListener('resize', measure);
+    };
+  }, [show, measure]);
+
+  // Keep the highlighted command in view when the arrow keys move past the
+  // visible part of a capped menu.
+  React.useEffect(() => {
+    if (!show) return;
+    menuRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [show, activeIndex]);
 
   const executeCommand = React.useCallback(
     (command: SlashCommand) => {
@@ -388,32 +417,31 @@ const SlashCommandMenu = () => {
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [show, filtered, activeIndex, executeCommand]);
 
-  if (!show || filtered.length === 0) return null;
+  if (!show || filtered.length === 0 || !placement) return null;
 
   return (
-    <MenuWrapper
-      ref={menuRef}
-      contentEditable={false}
-      style={{ top: position.top, left: position.left }}
-    >
-      {filtered.map((cmd, i) => {
-        const Icon = cmd.icon;
-        return (
-          <MenuItem
-            key={cmd.id}
-            $active={i === activeIndex}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              executeCommand(cmd);
-            }}
-            onMouseEnter={() => setActiveIndex(i)}
-          >
-            <Icon />
-            {cmd.label}
-          </MenuItem>
-        );
-      })}
-    </MenuWrapper>
+    <Portal>
+      <MenuWrapper ref={menuRef} contentEditable={false} style={placement}>
+        {filtered.map((cmd, i) => {
+          const Icon = cmd.icon;
+          return (
+            <MenuItem
+              key={cmd.id}
+              $active={i === activeIndex}
+              data-active={i === activeIndex}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                executeCommand(cmd);
+              }}
+              onMouseEnter={() => setActiveIndex(i)}
+            >
+              <Icon />
+              {cmd.label}
+            </MenuItem>
+          );
+        })}
+      </MenuWrapper>
+    </Portal>
   );
 };
 
