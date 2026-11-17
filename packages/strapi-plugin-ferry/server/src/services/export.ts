@@ -39,7 +39,11 @@ const csvColumns = (plan: Plan, options: ExportOptions): string[] => [
   ...(options.relations ? plan.relations.map((relation) => relation.name) : []),
 ];
 
-const flatten = (document: ExportedDocument, columns: string[]): Record<string, unknown> => {
+const flatten = (
+  document: ExportedDocument,
+  columns: string[],
+  relations: Set<string>
+): Record<string, unknown> => {
   const row: Record<string, unknown> = {};
 
   for (const column of columns) {
@@ -47,7 +51,12 @@ const flatten = (document: ExportedDocument, columns: string[]): Record<string, 
     // A to-many relation is a list of keys; a cell holds one string, and the
     // parser puts it back by splitting on the same comma. Quoting is the CSV
     // encoder's problem, not this one's.
-    row[column] = Array.isArray(value) ? value.join(',') : value;
+    //
+    // Only a relation. A Blocks field or a `json` field holding a list is an
+    // array too, and joining that writes `[object Object]` - which the import
+    // then reads back over the real content. Those go to the encoder whole,
+    // and it writes them as JSON.
+    row[column] = relations.has(column) && Array.isArray(value) ? value.join(',') : value;
   }
 
   return row;
@@ -140,12 +149,13 @@ const exportService = ({ strapi }: { strapi: Core.Strapi }) => {
         }
 
         const columns = csvColumns(plan, opts);
+        const relations = new Set(plan.relations.map((relation) => relation.name));
 
         return {
           filename: `${shortName(opts.uid)}.csv`,
           mime: 'text/csv; charset=utf-8',
           body: encode(
-            serialised.map((document: ExportedDocument) => flatten(document, columns)),
+            serialised.map((document: ExportedDocument) => flatten(document, columns, relations)),
             columns
           ),
           count: serialised.length,

@@ -44,6 +44,18 @@ export const coerce = (raw: string, type: string): unknown => {
         return undefined;
       }
     }
+    case 'blocks': {
+      // A Blocks field is a list of nodes, written into the cell as JSON. Any
+      // other shape - including the `[object Object]` that versions before
+      // 0.2.4 wrote - is not content, and handing it to Strapi empties the
+      // field. Refusing it here leaves the field as it was and says so.
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : undefined;
+      } catch {
+        return undefined;
+      }
+    }
     default:
       return raw;
   }
@@ -134,7 +146,11 @@ const parseCsv = (text: string, plan: Plan): Parsed => {
     );
   }
 
-  const documents = rows.map((row) => {
+  // Cells that were there but could not be read, by column, so a file with a
+  // thousand bad rows says so once per column rather than a thousand times.
+  const unreadable = new Map<string, number[]>();
+
+  const documents = rows.map((row, index) => {
     const document: Record<string, unknown> = {};
 
     for (const column of columns) {
@@ -163,11 +179,30 @@ const parseCsv = (text: string, plan: Plan): Parsed => {
 
       const type = scalarTypes.get(column);
       const value = type ? coerce(raw, type) : raw;
-      if (value !== undefined) document[column] = value;
+      if (value !== undefined) {
+        document[column] = value;
+        continue;
+      }
+
+      // Not blank, and not readable as what the schema says. Skipping it keeps
+      // the field as it was, which is the same safe reading as a blank cell -
+      // but unlike a blank cell, this one had something in it, so the report
+      // has to say it was not used.
+      const list = unreadable.get(column) ?? [];
+      list.push(index + 1);
+      unreadable.set(column, list);
     }
 
     return document;
   });
+
+  for (const [column, list] of unreadable) {
+    const shown = list.slice(0, 10).join(', ');
+    const more = list.length > 10 ? ` and ${list.length - 10} more` : '';
+    warnings.push(
+      `Column ${column} could not be read as ${scalarTypes.get(column)} in row${list.length === 1 ? '' : 's'} ${shown}${more}, so that field is left unchanged.`
+    );
+  }
 
   return { documents, warnings };
 };
