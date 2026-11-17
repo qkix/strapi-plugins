@@ -627,9 +627,19 @@ A feature that is turned off is gone from **every** way of reaching it: the tool
 
 **Existing content is never changed.** A document that already contains a heading or bold text keeps it, still renders it in the editor and still delivers it through the API - authors just cannot add more. Content pasted from elsewhere is not filtered either.
 
+The same document in four fields, each with different features turned off. The content is identical in all four; only what the author can add changes:
+
+![The same content in four Better Blocks fields with different features turned off](https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-better-blocks/docs/features/feature-switches-fields.png)
+
+The `/` menu follows the same settings. Left: a field with nothing turned off. Right: a field that allows only bold, italic and links:
+
+![The slash menu in a full field and in a restricted field](https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-better-blocks/docs/features/feature-switches-slash-menu.png)
+
 ### Per field
 
 In the Content-Type Builder, open a Better Blocks field, go to **Advanced settings** and tick what to turn off. The options are grouped as text formatting, paragraph formatting and inserted blocks.
+
+![Per-field feature switches in the field's Advanced settings](https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-better-blocks/docs/features/feature-switches-settings.png)
 
 ### For every field
 

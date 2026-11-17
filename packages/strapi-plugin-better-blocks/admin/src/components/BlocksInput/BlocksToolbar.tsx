@@ -978,6 +978,19 @@ const TextAlignButton = ({ disabled }: { disabled: boolean }) => {
   );
 };
 
+/**
+ * The blocks the `+` menu offers in this field: the built-in inserts, then the
+ * ones other packages registered - so the menu the user already knows keeps
+ * its order - minus whatever the field turned off.
+ */
+const getInsertKeys = (blocks: BlocksStore): string[] =>
+  [
+    ...INSERT_BLOCK_KEYS,
+    ...getRegisteredBlocks()
+      .filter(isOfferedInMenus)
+      .map((definition) => definition.type),
+  ].filter((key) => blocks[key]?.isInBlocksSelector);
+
 const InsertBlockButton = ({ disabled }: { disabled: boolean }) => {
   const { editor, blocks } = useBlocksEditorContext('InsertBlockButton');
   const { formatMessage } = useIntl();
@@ -989,18 +1002,7 @@ const InsertBlockButton = ({ disabled }: { disabled: boolean }) => {
     ReactEditor.focus(editor as ReactEditor);
   };
 
-  // Blocks other packages registered are appended after the built-in inserts,
-  // so the menu the user already knows keeps its order.
-  const insertKeys: string[] = [
-    ...INSERT_BLOCK_KEYS,
-    ...getRegisteredBlocks()
-      .filter(isOfferedInMenus)
-      .map((definition) => definition.type),
-  ].filter((key) => blocks[key]?.isInBlocksSelector);
-
-  // Every insertable block turned off for this field: an empty menu is a
-  // button that does nothing, so there is no button.
-  if (insertKeys.length === 0) return null;
+  const insertKeys = getInsertKeys(blocks);
 
   return (
     <>
@@ -1769,7 +1771,12 @@ const BlocksToolbar = () => {
       key: 'insert',
       toggle: 'multiple',
       items: [
-        <InsertBlockButton key="block" disabled={disabled} />,
+        // Decided here rather than by the button returning null: a component
+        // that renders nothing still counts as an item, and the group around
+        // it would be drawn empty between two separators.
+        getInsertKeys(blocks).length > 0 && (
+          <InsertBlockButton key="block" disabled={disabled} />
+        ),
         isFeatureEnabled('table') && (
           <InsertTableButton key="table" disabled={disabled} />
         ),
