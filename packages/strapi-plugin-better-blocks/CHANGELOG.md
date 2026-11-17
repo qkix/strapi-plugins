@@ -1,3 +1,13 @@
+## 0.25.1 (2026-11-17)
+
+### 🩹 Fixes
+
+- **strapi-plugin-better-blocks:** stop the slash menu being clipped by the editor ([#204](https://github.com/qkix/strapi-plugins/pull/204))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.25.0 (2026-11-17)
 
 ### 🚀 Features
