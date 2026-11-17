@@ -4,6 +4,37 @@ import { PluginIcon } from './components/PluginIcon';
 import Input from './components/Input';
 import * as yup from 'yup';
 
+import {
+  FEATURES,
+  FEATURE_GROUP_TITLES,
+  type FeatureGroup,
+  fieldOptionName,
+} from './features';
+
+/**
+ * One "Advanced settings" section per feature group, a checkbox per feature.
+ * Generated from the catalogue so a new feature cannot be added to the editor
+ * and forgotten here.
+ */
+const featureSections = (
+  Object.keys(FEATURE_GROUP_TITLES) as FeatureGroup[]
+).map((group) => ({
+  sectionTitle: {
+    id: `${PLUGIN_ID}.section.features.${group}`,
+    defaultMessage: FEATURE_GROUP_TITLES[group],
+  },
+  items: FEATURES.filter((feature) => feature.group === group).map(
+    (feature) => ({
+      name: `options.${fieldOptionName(feature.id)}`,
+      type: 'checkbox',
+      intlLabel: {
+        id: `${PLUGIN_ID}.feature.${feature.id}`,
+        defaultMessage: feature.label,
+      },
+    })
+  ),
+}));
+
 export default {
   register(app: any) {
     app.registerPlugin({
@@ -215,6 +246,9 @@ export default {
             ],
           },
         ],
+        // Turning editor features off, per field. A project-wide list goes in
+        // config/plugins under `features.disabled` and applies on top of these.
+        advanced: featureSections,
         validator: (args: any) => {
           const {
             disableDefaultColors = false,

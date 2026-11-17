@@ -33,6 +33,7 @@ import {
   getRegisteredBlocks,
   isOfferedInMenus,
 } from '../../blockRegistry';
+import { isSlashCommandEnabled } from '../../features';
 
 interface SlashCommand {
   id: string;
@@ -248,7 +249,10 @@ const MenuItem = styled.button<{ $active: boolean }>`
 
 const SlashCommandMenu = () => {
   const editor = useSlate();
-  const { blocks } = useBlocksEditorContext('SlashCommandMenu');
+  const { blocks, pluginOptions } = useBlocksEditorContext('SlashCommandMenu');
+  const disabledKey = (
+    (pluginOptions?.disabledFeatures as string[] | undefined) ?? []
+  ).join(',');
   const [show, setShow] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -258,20 +262,28 @@ const SlashCommandMenu = () => {
   // Blocks other packages registered are appended after the built-ins, so the
   // list the user already knows keeps its order.
   const commands = React.useMemo(
-    () => [
-      ...COMMANDS,
-      ...getRegisteredBlocks()
-        .filter(isOfferedInMenus)
-        .map((definition): SlashCommand => ({
-          id: definition.type,
-          label: String(
-            blockLabelDescriptor(definition).defaultMessage ?? definition.type
-          ),
-          icon: definition.icon!,
-          action: (editor) => definition.insert?.(editor),
-        })),
-    ],
-    []
+    () =>
+      [
+        ...COMMANDS,
+        ...getRegisteredBlocks()
+          .filter(isOfferedInMenus)
+          .map((definition): SlashCommand => ({
+            id: definition.type,
+            label: String(
+              blockLabelDescriptor(definition).defaultMessage ?? definition.type
+            ),
+            icon: definition.icon!,
+            action: (editor) => definition.insert?.(editor),
+          })),
+      ].filter((command) =>
+        // The menu is its own list rather than a view of the block store, so
+        // it has to be told which features this field turned off.
+        isSlashCommandEnabled(
+          command.id,
+          new Set(disabledKey ? disabledKey.split(',') : [])
+        )
+      ),
+    [disabledKey]
   );
 
   const filtered = React.useMemo(

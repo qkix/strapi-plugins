@@ -38,6 +38,18 @@ const TRANSFORMS: [string, string][] = [
   ['~=', '≈'],
 ];
 
+/**
+ * Whether the field turned a feature off. Read from the editor at the moment
+ * of typing because `BlocksEditor` refreshes `pluginOptions` on every render,
+ * while this plugin is wired once when the editor is created.
+ */
+const isDisabled = (editor: Editor, feature: string): boolean => {
+  const disabled = (
+    editor as unknown as { pluginOptions?: { disabledFeatures?: unknown } }
+  ).pluginOptions?.disabledFeatures;
+  return Array.isArray(disabled) && disabled.includes(feature);
+};
+
 const withAutoTransform = (editor: Editor): Editor => {
   const { insertText } = editor;
 
@@ -62,7 +74,7 @@ const withAutoTransform = (editor: Editor): Editor => {
         const beforeText = Editor.string(editor, range);
 
         // Block math: the whole block is exactly "$$" -> convert to a math block
-        if (beforeText.trim() === '$$') {
+        if (beforeText.trim() === '$$' && !isDisabled(editor, 'math')) {
           Transforms.select(editor, { anchor, focus: start });
           Transforms.delete(editor);
           setBlockMath(editor);
@@ -70,7 +82,10 @@ const withAutoTransform = (editor: Editor): Editor => {
         }
 
         // Mermaid diagram: the whole block is exactly "```mermaid" -> diagram block
-        if (beforeText.trim() === '```mermaid') {
+        if (
+          beforeText.trim() === '```mermaid' &&
+          !isDisabled(editor, 'diagram')
+        ) {
           Transforms.select(editor, { anchor, focus: start });
           Transforms.delete(editor);
           setBlockDiagram(editor);
@@ -78,7 +93,9 @@ const withAutoTransform = (editor: Editor): Editor => {
         }
 
         // Inline math: "$…$" ending at the cursor -> inline math node
-        const inlineMathMatch = beforeText.match(/\$([^$\n]+)\$$/);
+        const inlineMathMatch = isDisabled(editor, 'math')
+          ? null
+          : beforeText.match(/\$([^$\n]+)\$$/);
         if (inlineMathMatch) {
           const latex = inlineMathMatch[1];
           const triggerStart = {

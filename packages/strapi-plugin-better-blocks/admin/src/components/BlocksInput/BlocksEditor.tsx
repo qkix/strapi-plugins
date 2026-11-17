@@ -44,6 +44,7 @@ import {
   isOfferedInMenus,
   withRegisteredBlocks,
 } from '../../blockRegistry';
+import { restrictBlocks, restrictModifiers } from '../../features';
 import { BlocksContent, type BlocksContentProps } from './BlocksContent';
 import { BlocksToolbar } from './BlocksToolbar';
 import { EditorLayout } from './EditorLayout';
@@ -152,6 +153,12 @@ interface BlocksEditorContextValue {
   /** Enters or leaves fullscreen. Surfaced so the toolbar owns the toggle. */
   onToggleExpand: () => void;
   pluginOptions?: Record<string, any>;
+  /**
+   * Whether a feature from `features.ts` is available in this field. Blocks
+   * and marks are already filtered out of `blocks` and `modifiers`; this is for
+   * the controls that are neither, such as font size or the emoji picker.
+   */
+  isFeatureEnabled: (id: string) => boolean;
 }
 
 interface BlocksEditorProviderProps {
@@ -164,6 +171,7 @@ interface BlocksEditorProviderProps {
   isExpandedMode: boolean;
   onToggleExpand: () => void;
   pluginOptions?: Record<string, any>;
+  isFeatureEnabled: (id: string) => boolean;
 }
 
 const [_BlocksEditorProvider, usePartialBlocksEditorContext] =
@@ -407,7 +415,25 @@ const BlocksEditor = React.forwardRef<{ focus: () => void }, BlocksEditorProps>(
       []
     );
 
-    const blocks = React.useMemo(
+    // `pluginOptions` is rebuilt on every render of the field, so the list is
+    // keyed by its contents rather than by identity.
+    const disabledKey = (
+      (pluginOptions?.disabledFeatures as string[] | undefined) ?? []
+    ).join(',');
+    const disabledFeatures = React.useMemo(
+      () => new Set(disabledKey ? disabledKey.split(',') : []),
+      [disabledKey]
+    );
+    const isFeatureEnabled = React.useCallback(
+      (id: string) => !disabledFeatures.has(id),
+      [disabledFeatures]
+    );
+    const enabledModifiers = React.useMemo(
+      () => restrictModifiers(modifiers, disabledFeatures),
+      [disabledFeatures]
+    );
+
+    const allBlocks = React.useMemo(
       () => ({
         ...paragraphBlocks,
         ...headingBlocks,
@@ -436,6 +462,13 @@ const BlocksEditor = React.forwardRef<{ focus: () => void }, BlocksEditorProps>(
       [registeredBlocks]
     ) satisfies BlocksStore;
 
+    // Disabled blocks stay in the store - content that already has them must
+    // still render - but leave every menu and lose their conversion hotkeys.
+    const blocks = React.useMemo(
+      () => restrictBlocks(allBlocks, disabledFeatures),
+      [allBlocks, disabledFeatures]
+    );
+
     return (
       <>
         <VisuallyHidden id={ariaDescriptionId}>
@@ -457,13 +490,14 @@ const BlocksEditor = React.forwardRef<{ focus: () => void }, BlocksEditorProps>(
         >
           <_BlocksEditorProvider
             blocks={blocks}
-            modifiers={modifiers}
+            modifiers={enabledModifiers}
             disabled={disabled}
             name={name}
             setLiveText={setLiveText}
             isExpandedMode={isExpandedMode}
             onToggleExpand={handleToggleExpand}
             pluginOptions={pluginOptions}
+            isFeatureEnabled={isFeatureEnabled}
           >
             <EditorLayout
               error={error}

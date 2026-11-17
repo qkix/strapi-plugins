@@ -41,6 +41,7 @@ import { decorateCode } from './Blocks/Code';
 import { useBlocksEditorContext } from './BlocksEditor';
 import { useConversionModal } from './BlocksToolbar';
 import { decorateSearchMatches } from './FindReplace';
+import { modifiers as allModifiers } from './Modifiers';
 import { SlashCommandMenu } from './SlashCommands';
 import { subscribeShiki } from './utils/shiki';
 import { matchBlockShortcut } from './utils/shortcuts';
@@ -451,65 +452,66 @@ const BlocksContent = ({
   );
 
   // Move baseRenderLeaf inside component and memoize properly
-  const renderLeaf = React.useCallback(
-    (props: ExtendedRenderLeafProps) => {
-      // Recursively wrap the children for each active modifier
-      const wrappedChildren = getEntries(modifiers).reduce(
-        (currentChildren, modifierEntry) => {
-          const [name, modifier] = modifierEntry;
+  const renderLeaf = React.useCallback((props: ExtendedRenderLeafProps) => {
+    // Recursively wrap the children for each active modifier.
+    //
+    // Every modifier, not the context's: that one lacks the marks this field
+    // turned off, and text that is already bold must still look bold after
+    // bold is turned off - the author just cannot add more of it.
+    const wrappedChildren = getEntries(allModifiers).reduce(
+      (currentChildren, modifierEntry) => {
+        const [name, modifier] = modifierEntry;
 
-          if (props.leaf[name]) {
-            const modifierWithRenderLeaf = modifier as {
-              renderLeaf: (children: React.ReactNode) => React.ReactNode;
-            };
+        if (props.leaf[name]) {
+          const modifierWithRenderLeaf = modifier as {
+            renderLeaf: (children: React.ReactNode) => React.ReactNode;
+          };
 
-            return modifierWithRenderLeaf.renderLeaf(currentChildren);
+          return modifierWithRenderLeaf.renderLeaf(currentChildren);
+        }
+
+        return currentChildren;
+      },
+      props.children
+    );
+
+    // Apply inline styles: color, bg, font family, font size, search highlight
+    const leafColor = (props.leaf as any).color;
+    const leafBgColor = (props.leaf as any).backgroundColor;
+    const leafFontFamily = (props.leaf as any).fontFamily;
+    const leafFontSize = (props.leaf as any).fontSize;
+    const isSearchHighlight = (props.leaf as any).searchHighlight;
+    const isSearchActive = (props.leaf as any).searchHighlightActive;
+    const style: React.CSSProperties = {
+      ...(leafColor ? { color: leafColor } : {}),
+      ...(leafBgColor ? { backgroundColor: leafBgColor } : {}),
+      ...(leafFontFamily ? { fontFamily: leafFontFamily } : {}),
+      ...(leafFontSize ? { fontSize: leafFontSize } : {}),
+      ...(isSearchActive
+        ? {
+            backgroundColor: '#f97316',
+            color: '#ffffff',
+            borderRadius: '2px',
           }
-
-          return currentChildren;
-        },
-        props.children
-      );
-
-      // Apply inline styles: color, bg, font family, font size, search highlight
-      const leafColor = (props.leaf as any).color;
-      const leafBgColor = (props.leaf as any).backgroundColor;
-      const leafFontFamily = (props.leaf as any).fontFamily;
-      const leafFontSize = (props.leaf as any).fontSize;
-      const isSearchHighlight = (props.leaf as any).searchHighlight;
-      const isSearchActive = (props.leaf as any).searchHighlightActive;
-      const style: React.CSSProperties = {
-        ...(leafColor ? { color: leafColor } : {}),
-        ...(leafBgColor ? { backgroundColor: leafBgColor } : {}),
-        ...(leafFontFamily ? { fontFamily: leafFontFamily } : {}),
-        ...(leafFontSize ? { fontSize: leafFontSize } : {}),
-        ...(isSearchActive
+        : isSearchHighlight
           ? {
-              backgroundColor: '#f97316',
-              color: '#ffffff',
+              backgroundColor: '#fbbf24',
+              color: '#1c1c1e',
               borderRadius: '2px',
             }
-          : isSearchHighlight
-            ? {
-                backgroundColor: '#fbbf24',
-                color: '#1c1c1e',
-                borderRadius: '2px',
-              }
-            : {}),
-      };
+          : {}),
+    };
 
-      return (
-        <span
-          {...props.attributes}
-          className={props.leaf.className}
-          style={style}
-        >
-          {wrappedChildren}
-        </span>
-      );
-    },
-    [modifiers]
-  );
+    return (
+      <span
+        {...props.attributes}
+        className={props.leaf.className}
+        style={style}
+      >
+        {wrappedChildren}
+      </span>
+    );
+  }, []);
 
   // Move baseRenderElement inside component and memoize properly
   const renderElement = React.useCallback(

@@ -155,9 +155,22 @@ const InlineColorPicker = () => {
     editor,
     disabled,
     pluginOptions = {},
+    isFeatureEnabled,
   } = useBlocksEditorContext('InlineColorPicker');
   const [isOpen, setIsOpen] = React.useState(false);
-  const [mode, setMode] = React.useState<ColorMode>('foreground');
+  const [preferredMode, setMode] = React.useState<ColorMode>('foreground');
+
+  // Text colour and highlight are separate features. The toolbar only renders
+  // this picker when at least one is on; with one off, its tab goes and the
+  // other is the only mode left.
+  const canForeground = isFeatureEnabled('textColor');
+  const canBackground = isFeatureEnabled('backgroundColor');
+  const mode: ColorMode =
+    preferredMode === 'foreground' && !canForeground
+      ? 'background'
+      : preferredMode === 'background' && !canBackground
+        ? 'foreground'
+        : preferredMode;
 
   // Get color options from plugin configuration
   const fgOptions = getOptionsWithFallback(
@@ -233,32 +246,38 @@ const InlineColorPicker = () => {
           width={7}
           height={7}
           hasRadius
-          aria-label="Text color"
+          aria-label={canForeground ? 'Text color' : 'Highlight color'}
           aria-disabled={isDisabled()}
           disabled={isDisabled()}
           style={{
             ...(currentBgColor ? { backgroundColor: currentBgColor } : {}),
           }}
         >
-          <ForegroundIcon color={currentFgColor} />
+          {canForeground ? (
+            <ForegroundIcon color={currentFgColor} />
+          ) : (
+            <BackgroundIcon />
+          )}
         </ColorToolbarButton>
       </Popover.Trigger>
       <Popover.Content>
         <Box padding={2}>
-          <Flex gap={0} style={{ marginBottom: '4px' }}>
-            <ModeTab
-              $active={mode === 'foreground'}
-              onClick={() => setMode('foreground')}
-            >
-              <ForegroundIcon /> Text
-            </ModeTab>
-            <ModeTab
-              $active={mode === 'background'}
-              onClick={() => setMode('background')}
-            >
-              <BackgroundIcon /> Highlight
-            </ModeTab>
-          </Flex>
+          {canForeground && canBackground && (
+            <Flex gap={0} style={{ marginBottom: '4px' }}>
+              <ModeTab
+                $active={mode === 'foreground'}
+                onClick={() => setMode('foreground')}
+              >
+                <ForegroundIcon /> Text
+              </ModeTab>
+              <ModeTab
+                $active={mode === 'background'}
+                onClick={() => setMode('background')}
+              >
+                <BackgroundIcon /> Highlight
+              </ModeTab>
+            </Flex>
+          )}
           <ColorGrid>
             {colorOptions.map((option, index) => (
               <ColorSwatch

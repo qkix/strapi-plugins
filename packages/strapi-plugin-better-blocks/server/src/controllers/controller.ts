@@ -76,6 +76,11 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           facebookConfigured: Boolean(social.facebook?.accessToken),
         };
       })(),
+      features: {
+        disabled: strapi
+          .plugin('better-blocks')
+          .config('features.disabled', []) as string[],
+      },
     };
   },
 });
