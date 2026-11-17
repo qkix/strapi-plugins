@@ -1,3 +1,13 @@
+## 0.2.4 (2026-11-17)
+
+### 🩹 Fixes
+
+- **strapi-plugin-ferry:** carry Blocks fields through CSV as JSON ([#198](https://github.com/qkix/strapi-plugins/pull/198))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.2.3 (2026-10-28)
 
 This was a version bump only for @qkix/strapi-plugin-ferry to align it with other projects, there were no code changes.
