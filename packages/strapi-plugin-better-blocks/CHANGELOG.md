@@ -1,3 +1,13 @@
+## 0.25.0 (2026-11-17)
+
+### 🚀 Features
+
+- **strapi-plugin-better-blocks:** turn editor features off per field or project-wide ([#201](https://github.com/qkix/strapi-plugins/pull/201))
+
+### ❤️ Thank You
+
+- kkukielka
+
 ## 0.24.0 (2026-10-28)
 
 ### 🚀 Features
