@@ -4,6 +4,8 @@ import { Field, Flex } from '@strapi/design-system';
 import { useFetchClient } from '@strapi/admin/strapi-admin';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
+import { resolveDisabledFeatures } from '../features';
+
 interface ButtonPresetConfig {
   backgroundColor?: string;
   textColor?: string;
@@ -27,6 +29,8 @@ interface PluginConfig {
     instagramConfigured?: boolean;
     facebookConfigured?: boolean;
   };
+  /** Editor features turned off for every field - see `features.ts`. */
+  features?: { disabled?: string[] };
 }
 
 /**
@@ -53,6 +57,8 @@ interface InputProps {
       detailsStyle?: 'github' | 'custom';
       buttonDefaultBackgroundColor?: string;
       buttonDefaultTextColor?: string;
+      /** `disableFontSize`, `disableTable`... - one per entry in `features.ts`. */
+      [option: `disable${string}`]: boolean | undefined;
     };
   };
   description?: { id: string; defaultMessage: string };
@@ -138,6 +144,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     socialPlatforms: globalConfig?.social?.platforms,
     socialInstagramConfigured: globalConfig?.social?.instagramConfigured,
     socialFacebookConfigured: globalConfig?.social?.facebookConfigured,
+    disabledFeatures: resolveDisabledFeatures(
+      fieldOptions,
+      globalConfig?.features?.disabled
+    ),
   };
 
   const handleChange = (name: string, value: any) => {

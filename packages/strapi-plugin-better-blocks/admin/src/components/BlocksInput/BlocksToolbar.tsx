@@ -978,6 +978,19 @@ const TextAlignButton = ({ disabled }: { disabled: boolean }) => {
   );
 };
 
+/**
+ * The blocks the `+` menu offers in this field: the built-in inserts, then the
+ * ones other packages registered - so the menu the user already knows keeps
+ * its order - minus whatever the field turned off.
+ */
+const getInsertKeys = (blocks: BlocksStore): string[] =>
+  [
+    ...INSERT_BLOCK_KEYS,
+    ...getRegisteredBlocks()
+      .filter(isOfferedInMenus)
+      .map((definition) => definition.type),
+  ].filter((key) => blocks[key]?.isInBlocksSelector);
+
 const InsertBlockButton = ({ disabled }: { disabled: boolean }) => {
   const { editor, blocks } = useBlocksEditorContext('InsertBlockButton');
   const { formatMessage } = useIntl();
@@ -989,14 +1002,7 @@ const InsertBlockButton = ({ disabled }: { disabled: boolean }) => {
     ReactEditor.focus(editor as ReactEditor);
   };
 
-  // Blocks other packages registered are appended after the built-in inserts,
-  // so the menu the user already knows keeps its order.
-  const insertKeys: string[] = [
-    ...INSERT_BLOCK_KEYS,
-    ...getRegisteredBlocks()
-      .filter(isOfferedInMenus)
-      .map((definition) => definition.type),
-  ];
+  const insertKeys = getInsertKeys(blocks);
 
   return (
     <>
@@ -1014,7 +1020,7 @@ const InsertBlockButton = ({ disabled }: { disabled: boolean }) => {
         <Menu.Content>
           {insertKeys.map((key) => {
             const block = blocks[key];
-            if (!block?.isInBlocksSelector) return null;
+            if (!block.isInBlocksSelector) return null;
             const Icon = block.icon;
             return (
               <StyledMenuItem
@@ -1592,9 +1598,8 @@ const InlineMathButton = ({ disabled }: { disabled: boolean }) => {
 };
 
 const BlocksToolbar = () => {
-  const { editor, blocks, modifiers, disabled } =
+  const { editor, blocks, modifiers, disabled, isFeatureEnabled } =
     useBlocksEditorContext('BlocksToolbar');
-  const { formatMessage } = useIntl();
 
   /**
    * The modifier buttons are disabled when an image is selected.
@@ -1633,6 +1638,8 @@ const BlocksToolbar = () => {
    * so nothing ever overflowed and the menu's trigger - which reserves its
    * space with `visibility: hidden` - sat there as a permanent empty slot
    * between the lists and the next separator.
+   *
+   * `modifiers` already lacks the marks this field turned off.
    */
   const markButtons = getEntries(modifiers).map(([name, modifier]) => {
     const mark = modifier as {
@@ -1655,95 +1662,173 @@ const BlocksToolbar = () => {
     );
   });
 
+  const showColors =
+    isFeatureEnabled('textColor') || isFeatureEnabled('backgroundColor');
+
+  /**
+   * The groups, in order, each holding only the controls this field allows.
+   *
+   * A group can end up empty - a field with no lists has nothing for the lists
+   * group - and is then dropped along with its separator, so turning features
+   * off never leaves two separators side by side or one dangling at the end.
+   * `toggle` marks the groups that are Radix toggle groups: their items are
+   * ToggleItems, which throw without one.
+   */
+  const groups: {
+    key: string;
+    toggle?: 'single' | 'multiple';
+    items: React.ReactNode[];
+  }[] = [
+    {
+      key: 'history',
+      toggle: 'multiple',
+      items: [
+        <UndoButton key="undo" disabled={disabled} />,
+        <RedoButton key="redo" disabled={disabled} />,
+      ],
+    },
+    // Structure: what kind of block am I in. The dropdown always has at least
+    // the paragraph, which cannot be turned off.
+    { key: 'structure', items: [<BlocksDropdown key="blocks" />] },
+    {
+      // Type: the look of the characters themselves
+      key: 'type',
+      items: [
+        isFeatureEnabled('fontSize') && (
+          <FontSizeSelect key="size" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('fontFamily') && (
+          <FontFamilySelect key="family" disabled={isButtonDisabled} />
+        ),
+        showColors && <InlineColorPicker key="color" />,
+      ],
+    },
+    {
+      key: 'marks',
+      toggle: 'multiple',
+      items: [
+        ...markButtons,
+        isFeatureEnabled('link') && (
+          <LinkButton
+            key="link"
+            disabled={isButtonDisabled}
+            location="toolbar"
+          />
+        ),
+      ],
+    },
+    {
+      key: 'lists',
+      toggle: 'single',
+      items: isFeatureEnabled('lists')
+        ? [
+            <ListButton
+              key="unordered"
+              block={blocks['list-unordered']}
+              format={'unordered' as never}
+              location="toolbar"
+            />,
+            <ListButton
+              key="ordered"
+              block={blocks['list-ordered']}
+              format={'ordered' as never}
+              location="toolbar"
+            />,
+            <ListButton
+              key="todo"
+              block={blocks['list-todo']}
+              format={'todo' as never}
+              location="toolbar"
+            />,
+          ]
+        : [],
+    },
+    {
+      // Paragraph-level formatting
+      key: 'paragraph',
+      toggle: 'multiple',
+      items: [
+        isFeatureEnabled('quote') && (
+          <QuoteButton key="quote" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('alignment') && (
+          <TextAlignButton key="align" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('lineHeight') && (
+          <LineHeightButton key="line-height" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('indent') && (
+          <IndentButton key="indent" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('indent') && (
+          <OutdentButton key="outdent" disabled={isButtonDisabled} />
+        ),
+        <RemoveFormattingButton key="clear" disabled={isButtonDisabled} />,
+      ],
+    },
+    {
+      // Insertion: what can I add here
+      key: 'insert',
+      toggle: 'multiple',
+      items: [
+        // Decided here rather than by the button returning null: a component
+        // that renders nothing still counts as an item, and the group around
+        // it would be drawn empty between two separators.
+        getInsertKeys(blocks).length > 0 && (
+          <InsertBlockButton key="block" disabled={disabled} />
+        ),
+        isFeatureEnabled('table') && (
+          <InsertTableButton key="table" disabled={disabled} />
+        ),
+        isFeatureEnabled('embed') && (
+          <InsertMediaButton key="media" disabled={disabled} />
+        ),
+        isFeatureEnabled('math') && (
+          <InlineMathButton key="math" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('horizontalLine') && (
+          <HorizontalLineButton key="hr" disabled={disabled} />
+        ),
+        isFeatureEnabled('emoji') && (
+          <EmojiPicker key="emoji" disabled={isButtonDisabled} />
+        ),
+        isFeatureEnabled('specialCharacters') && (
+          <SpecialCharPicker key="chars" disabled={isButtonDisabled} />
+        ),
+      ],
+    },
+    {
+      key: 'utilities',
+      items: [
+        <FindReplace key="find" disabled={disabled} />,
+        <ExpandButton key="expand" />,
+      ],
+    },
+  ];
+
+  const visibleGroups = groups
+    .map((group) => ({ ...group, items: group.items.filter(Boolean) }))
+    .filter((group) => group.items.length > 0);
+
   return (
     <Toolbar.Root aria-disabled={disabled} asChild>
       <ToolbarWrapper padding={2} width="100%">
         <MenuScrollbarStyles />
 
-        {/* ---- History ---- */}
-        <Toolbar.ToggleGroup type="multiple" asChild>
-          <ToolbarGroup>
-            <UndoButton disabled={disabled} />
-            <RedoButton disabled={disabled} />
-          </ToolbarGroup>
-        </Toolbar.ToggleGroup>
-        <ToolbarSeparator />
-
-        {/* ---- Structure: what kind of block am I in ---- */}
-        <BlocksDropdown />
-        <ToolbarSeparator />
-
-        {/* ---- Type: the look of the characters themselves ---- */}
-        <ToolbarGroup>
-          <FontSizeSelect disabled={isButtonDisabled} />
-          <FontFamilySelect disabled={isButtonDisabled} />
-          <InlineColorPicker />
-        </ToolbarGroup>
-        <ToolbarSeparator />
-
-        {/* ---- Marks ---- */}
-        <Toolbar.ToggleGroup type="multiple" asChild>
-          <ToolbarGroup>
-            {markButtons}
-            <LinkButton disabled={isButtonDisabled} location="toolbar" />
-          </ToolbarGroup>
-        </Toolbar.ToggleGroup>
-        <ToolbarSeparator />
-
-        {/* ---- Lists ---- */}
-        <Toolbar.ToggleGroup type="single" asChild>
-          <ToolbarGroup>
-            <ListButton
-              block={blocks['list-unordered']}
-              format={'unordered' as never}
-              location="toolbar"
-            />
-            <ListButton
-              block={blocks['list-ordered']}
-              format={'ordered' as never}
-              location="toolbar"
-            />
-            <ListButton
-              block={blocks['list-todo']}
-              format={'todo' as never}
-              location="toolbar"
-            />
-          </ToolbarGroup>
-        </Toolbar.ToggleGroup>
-        <ToolbarSeparator />
-
-        {/* ---- Paragraph-level formatting ---- */}
-        <Toolbar.ToggleGroup type="multiple" asChild>
-          <ToolbarGroup>
-            <QuoteButton disabled={isButtonDisabled} />
-            <TextAlignButton disabled={isButtonDisabled} />
-            <LineHeightButton disabled={isButtonDisabled} />
-            <IndentButton disabled={isButtonDisabled} />
-            <OutdentButton disabled={isButtonDisabled} />
-            <RemoveFormattingButton disabled={isButtonDisabled} />
-          </ToolbarGroup>
-        </Toolbar.ToggleGroup>
-        <ToolbarSeparator />
-
-        {/* ---- Insertion: what can I add here ---- */}
-        <Toolbar.ToggleGroup type="multiple" asChild>
-          <ToolbarGroup>
-            <InsertBlockButton disabled={disabled} />
-            <InsertTableButton disabled={disabled} />
-            <InsertMediaButton disabled={disabled} />
-            <InlineMathButton disabled={isButtonDisabled} />
-            <HorizontalLineButton disabled={disabled} />
-            <EmojiPicker disabled={isButtonDisabled} />
-            <SpecialCharPicker disabled={isButtonDisabled} />
-          </ToolbarGroup>
-        </Toolbar.ToggleGroup>
-        <ToolbarSeparator />
-
-        {/* ---- Utilities ---- */}
-        <ToolbarGroup>
-          <FindReplace disabled={disabled} />
-          <ExpandButton />
-        </ToolbarGroup>
+        {visibleGroups.map((group, index) => (
+          <React.Fragment key={group.key}>
+            {index > 0 && <ToolbarSeparator />}
+            {group.key === 'structure' ? (
+              group.items
+            ) : group.toggle ? (
+              <Toolbar.ToggleGroup type={group.toggle as never} asChild>
+                <ToolbarGroup>{group.items}</ToolbarGroup>
+              </Toolbar.ToggleGroup>
+            ) : (
+              <ToolbarGroup>{group.items}</ToolbarGroup>
+            )}
+          </React.Fragment>
+        ))}
       </ToolbarWrapper>
     </Toolbar.Root>
   );

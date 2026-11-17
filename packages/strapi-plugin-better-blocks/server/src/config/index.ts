@@ -91,12 +91,44 @@ export default {
       instagram: { accessToken: undefined },
       facebook: { accessToken: undefined },
     },
+    /**
+     * Editor features turned off in every Better Blocks field. Each field can
+     * turn more off in its Advanced settings; it cannot bring these back.
+     *
+     *   'better-blocks': {
+     *     config: {
+     *       features: { disabled: ['fontSize', 'fontFamily', 'textColor'] },
+     *     },
+     *   }
+     *
+     * The ids are listed in the README. A block another plugin registered is
+     * turned off by its type, e.g. 'chart'.
+     */
+    features: {
+      disabled: [] as string[],
+    },
   },
-  validator(config: { details?: { style?: string } } = {}) {
+  validator(
+    config: {
+      details?: { style?: string };
+      features?: { disabled?: unknown };
+    } = {}
+  ) {
     const style = config?.details?.style;
     if (style && style !== 'github' && style !== 'custom') {
       throw new Error(
         `[better-blocks] config.details.style must be "github" or "custom" (received "${style}")`
+      );
+    }
+
+    const disabled = config?.features?.disabled;
+    if (
+      disabled !== undefined &&
+      (!Array.isArray(disabled) ||
+        disabled.some((id) => typeof id !== 'string'))
+    ) {
+      throw new Error(
+        '[better-blocks] config.features.disabled must be an array of feature ids, e.g. ["fontSize", "table"]'
       );
     }
   },

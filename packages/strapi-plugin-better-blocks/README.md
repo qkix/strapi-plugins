@@ -35,11 +35,12 @@
 4. [Configuration](#configuration)
 5. [Usage](#usage)
 6. [Custom Color Presets](#custom-color-presets)
-7. [Media Embeds (CSP Configuration)](#media-embeds-csp-configuration)
-8. [Frontend Rendering](#frontend-rendering)
-9. [Adding Your Own Block Type](#adding-your-own-block-type)
-10. [Contributing](#contributing)
-11. [License](#license)
+7. [Turning Editor Features Off](#turning-editor-features-off)
+8. [Media Embeds (CSP Configuration)](#media-embeds-csp-configuration)
+9. [Frontend Rendering](#frontend-rendering)
+10. [Adding Your Own Block Type](#adding-your-own-block-type)
+11. [Contributing](#contributing)
+12. [License](#license)
 
 ---
 
@@ -124,6 +125,7 @@
 - **Auto Text Transformations** &mdash; Automatic symbol replacement on space: `(c)` &rarr; &copy;, `1/2` &rarr; &frac12;, `--` &rarr; &mdash;, `->` &rarr; &rarr;, and more
 - **Editor Placeholder** &mdash; "Start writing..." placeholder shown when the editor is empty
 - **Responsive Toolbar** &mdash; Wraps to multiple rows on smaller screens so all buttons remain accessible
+- **Feature switches** - Turn off any editor feature (font size, colors, tables, headings...) per field or for the whole project; see [Turning Editor Features Off](#turning-editor-features-off)
 - **Full Blocks Editor** &mdash; Paragraphs, headings, lists, links, quotes, code blocks, and all standard text modifiers (bold, italic, underline, strikethrough, code, uppercase, superscript, subscript)
 
 ## Compatibility
@@ -616,6 +618,56 @@ Neutral:#EDF2F7
 **Text colors:** Teal, Dark, Gray, Light Gray, Silver, Medium Gray, White
 
 **Background colors:** Yellow, Green, Blue, Pink, Purple, Orange, Gray, Teal, Red, Cyan
+
+## Turning Editor Features Off
+
+Every formatting option and block can be turned off, so a field only offers what your frontend actually renders. A short summary field might allow bold, italic and links and nothing else; a project with a strict design system might ban font sizes and text colors everywhere.
+
+A feature that is turned off is gone from **every** way of reaching it: the toolbar, the floating toolbar that appears over selected text, the `/` slash menu, the keyboard shortcuts (<kbd>Cmd/Ctrl</kbd>+<kbd>B</kbd>, <kbd>Cmd/Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>...) and the typed shortcuts (`$$`, ` ```mermaid `). Hiding only the toolbar button would not restrict anything.
+
+**Existing content is never changed.** A document that already contains a heading or bold text keeps it, still renders it in the editor and still delivers it through the API - authors just cannot add more. Content pasted from elsewhere is not filtered either.
+
+The same document in four fields, each with different features turned off. The content is identical in all four; only what the author can add changes:
+
+![The same content in four Better Blocks fields with different features turned off](https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-better-blocks/docs/features/feature-switches-fields.png)
+
+The `/` menu follows the same settings. Left: a field with nothing turned off. Right: a field that allows only bold, italic and links:
+
+![The slash menu in a full field and in a restricted field](https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-better-blocks/docs/features/feature-switches-slash-menu.png)
+
+### Per field
+
+In the Content-Type Builder, open a Better Blocks field, go to **Advanced settings** and tick what to turn off. The options are grouped as text formatting, paragraph formatting and inserted blocks.
+
+![Per-field feature switches in the field's Advanced settings](https://raw.githubusercontent.com/qkix/strapi-plugins/main/packages/strapi-plugin-better-blocks/docs/features/feature-switches-settings.png)
+
+### For every field
+
+List feature ids under `features.disabled` in `config/plugins.ts`. They apply to every Better Blocks field, on top of each field's own settings - a field cannot turn back on something the project turned off.
+
+```typescript
+// config/plugins.ts
+export default () => ({
+  'better-blocks': {
+    enabled: true,
+    config: {
+      features: {
+        disabled: ['fontSize', 'fontFamily', 'textColor', 'backgroundColor'],
+      },
+    },
+  },
+});
+```
+
+| Group     | Feature ids                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Text      | `headings`, `fontSize`, `fontFamily`, `textColor`, `backgroundColor`, `bold`, `italic`, `underline`, `strikethrough`, `inlineCode`, `superscriptSubscript`, `uppercase`, `link` |
+| Paragraph | `lists`, `quote`, `alignment`, `lineHeight`, `indent`                                                                                                                           |
+| Insert    | `codeBlock`, `table`, `image`, `audio`, `video`, `embed`, `socialEmbed`, `button`, `callout`, `details`, `diagram`, `math`, `horizontalLine`, `emoji`, `specialCharacters`      |
+
+A block another plugin registered (see [Adding Your Own Block Type](#adding-your-own-block-type)) is turned off by its type, for example `'chart'` for Chartkit. Those can only be turned off in `config/plugins.ts`, not per field.
+
+Paragraphs, undo/redo, remove formatting, find & replace and fullscreen cannot be turned off.
 
 ## Media Embeds (CSP Configuration)
 

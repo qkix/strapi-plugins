@@ -82,9 +82,8 @@ const Bar = styled(Flex)`
  * and a state write there would loop.
  */
 const FloatingSelectionToolbar = () => {
-  const { editor, disabled, modifiers } = useBlocksEditorContext(
-    'FloatingSelectionToolbar'
-  );
+  const { editor, disabled, modifiers, isFeatureEnabled } =
+    useBlocksEditorContext('FloatingSelectionToolbar');
   const barRef = React.useRef<HTMLDivElement>(null);
   // Suppressed while the author is dragging out a selection, so the bar doesn't
   // chase the cursor mid-drag.
@@ -196,8 +195,11 @@ const FloatingSelectionToolbar = () => {
                   />
                 );
               })}
-              <LinkButton disabled={disabled} location="toolbar" />
-              <InlineColorPicker />
+              {isFeatureEnabled('link') && (
+                <LinkButton disabled={disabled} location="toolbar" />
+              )}
+              {(isFeatureEnabled('textColor') ||
+                isFeatureEnabled('backgroundColor')) && <InlineColorPicker />}
               {/* ToolbarButton renders a Radix ToggleItem, which throws unless
                   it has a ToggleGroup ancestor - keep it inside this group. */}
               <RemoveFormattingButton disabled={disabled} />
