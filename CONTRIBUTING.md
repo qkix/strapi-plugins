@@ -44,7 +44,7 @@ run a single example.
 
 ### Without Docker
 
-Node 20 or 22 - the Strapi SDK refuses 23 and newer.
+Node 22.23.4 or newer, up to Node 26.
 
 ```bash
 pnpm install
@@ -104,7 +104,7 @@ suite over the core helpers.
 
 - Keep PRs focused - one feature or fix per PR.
 - Fill out the PR template.
-- Make sure CI passes (lint, typecheck, test, build) on both Node 20 and 22.
+- Make sure CI passes (lint, typecheck, test, build) on Node 22, 24 and 26.
 - Add screenshots or GIFs for UI changes.
 - Documentation ships with the code: a change to a package's behavior updates
   that package's README in the same PR.

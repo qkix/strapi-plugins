@@ -22,9 +22,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Keep this job id as `build`: branch protection on main requires the
-  # contexts "build (20)" and "build (22)", and renaming it silently makes
-  # those checks unsatisfiable - every PR sits BLOCKED with a green CI.
+  # Keep this job id as `build`: branch protection on main requires contexts
+  # named "build (<node-version>)", and renaming the job or dropping a version
+  # that is still required silently makes those checks unsatisfiable - every
+  # PR sits BLOCKED with a green CI. Update the required checks along with the
+  # matrix.
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -32,7 +34,7 @@ jobs:
         # The build and test tooling (vitest 5, tsup 9, jsdom 30) needs Node 22.12+.
         # This is the repo's own toolchain only: the published packages still
         # declare engines >=20, since nothing they run needs Node 22.
-        node-version: [22, 24]
+        node-version: [22, 24, 26]
 
     steps:
       - uses: actions/checkout@v4
