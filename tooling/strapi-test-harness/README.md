@@ -106,11 +106,10 @@ Each instance gets its own temp directory and SQLite file, both removed by
 
 ## Things that will bite you
 
-**Node 20 or 22 - same as the rest of the repo.** Nothing in the harness objects
-to Node 24: `@strapi/strapi` allows up to 26 and `better-sqlite3` up to 25. The
-ceiling comes from `@strapi/sdk-plugin`, which builds both plugins and declares
-`node: >=18.0.0 <=22.x.x`, so the repo pins `engines: >=20 <23` and CI runs the
-20/22 matrix.
+**Node 22.23.4 to 26 - same as the rest of the repo.** The floor comes from the
+repo toolchain (Astro 7, vitest 5). The ceiling comes from `@strapi/strapi` and
+`better-sqlite3`, which both stop at 26. `@strapi/sdk-plugin` no longer sets an
+upper bound. The repo pins `engines: >=22.23.4 <27` and CI runs on 22, 24 and 26.
 
 What you will actually hit is a native binding compiled for a different Node than
 the one you are running - `better-sqlite3` builds at install time, so switching

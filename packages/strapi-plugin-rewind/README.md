@@ -255,7 +255,7 @@ same mechanism Strapi uses to protect its own. Nothing to configure.
 
 ## Requirements
 
-Strapi 5, Node 20 or 22.
+Strapi 5, Node 20 to 26.
 
 ## Roadmap
 

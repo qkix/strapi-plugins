@@ -93,7 +93,7 @@ The directory name of a package always matches its npm name without the `@qkix` 
 
 ## Working on it
 
-A pnpm workspace driven by Nx. Node 20 or 22 - the Strapi SDK refuses 23+.
+A pnpm workspace driven by Nx. Node 22.23.4 or newer, up to Node 26.
 
 ```bash
 pnpm install
