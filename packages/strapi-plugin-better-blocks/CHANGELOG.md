@@ -1,3 +1,13 @@
+## 0.25.2 (2026-11-21)
+
+### 🩹 Fixes
+
+- support Node 26 ([#206](https://github.com/qkix/strapi-plugins/pull/206))
+
+### ❤️ Thank You
+
+- aleksander @baskaaleksander
+
 ## 0.25.1 (2026-11-17)
 
 ### 🩹 Fixes
