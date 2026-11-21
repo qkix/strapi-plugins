@@ -1,3 +1,13 @@
+## 0.3.4 (2026-11-21)
+
+### 🩹 Fixes
+
+- support Node 26 ([#206](https://github.com/qkix/strapi-plugins/pull/206))
+
+### ❤️ Thank You
+
+- aleksander @baskaaleksander
+
 ## 0.3.3 (2026-10-28)
 
 This was a version bump only for @qkix/chartkit-editor to align it with other projects, there were no code changes.
